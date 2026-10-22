@@ -2,3 +2,6 @@
 .venv/
 __pycache__/
 *.pyc
+
+# 本地需求文档（不纳入版本管理）
+对RAG的初步要求.docx
