@@ -8,6 +8,7 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_core.runnables import RunnableWithMessageHistory
 
 from model.factory import chat_model
+from utils.path_tool import get_abs_path
 
 
 # message_to_dict: 单个消息对象（BaseMessage类实例） -> 字典
@@ -91,7 +92,7 @@ base_chain = prompt_template | print_prompt | model | str_parser
 
 
 def get_history(session_id):
-    return FileChatMessageHistory(session_id, "./chat_history")
+    return FileChatMessageHistory(session_id, get_abs_path("memorys/chat_history"))
 
 # 创建一个新的链，对原有链增强功能：自动附加历史消息
 conversation_chain = RunnableWithMessageHistory(
