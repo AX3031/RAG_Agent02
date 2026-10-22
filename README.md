@@ -67,9 +67,12 @@
 | 工具调用日志 | ✅ 已接入 | `agent/tools/middleware.py` → `monitor_tool` |
 | 模型调用前状态日志 | ✅ 已接入 | `agent/tools/middleware.py` → `log_before_model` |
 | 报告场景动态提示词 | ✅ 已接入 | `fill_context_for_report` + `report_prompt_switch` |
+| 联网搜索（百度） | ✅ 已接入 | `agent/tools/agent_tools.py` → `web_search_baidu` |
+| PII 脱敏（邮箱/手机号） | ✅ 已接入 | `agent/tools/middleware.py` → `PIIMiddleware` |
+| 模型降级（主模型 → 备用模型） | ✅ 已接入 | `agent/tools/middleware.py` → `ModelFallbackMiddleware` |
 | 外部使用记录查询 | 🧪 示例 | `fetch_external_data` 读取 CSV，示例文件当前为空 |
 | 天气 / 城市 / 用户 ID / 月份 | 🧪 模拟 | `agent/tools/agent_tools.py` 中返回随机或固定值 |
-| 会话记忆 | 🧪 未接线 | `memorys/` 下有临时/文件两种实现，主链路未使用 |
+| 会话记忆（PostgreSQL checkpointer） | 🧪 可选 | `memorys/postgres_checkpointer.py`；`USE_POSTGRES_CHECKPOINTER=true` 开启 |
 | 文件上传入库 | 🧪 预留 | `app_file_uploader.py` 当前为空壳 |
 | 鉴权 / 多用户 / 限流 | ❌ 未实现 | — |
 
@@ -83,6 +86,7 @@
 | 包管理 | uv | 0.12.9 | 依赖安装、锁文件、命令执行 |
 | Agent 框架 | langchain | 1.4.0 | `create_agent`、中间件、工具装饰器 |
 | 图执行 | langgraph | 1.2.11 | Agent 的 StateGraph 运行时、`stream` |
+| 状态持久化 | langgraph-checkpoint-postgres / psycopg | 3.2.0 / 3.3.6 | PostgreSQL checkpointer 与连接池 |
 | 模型接入 | langchain-openai | 1.6.6 | `ChatOpenAI` 调用 DashScope OpenAI 兼容端点 |
 | 社区集成 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader |
 | 向量库 | langchain-chroma / chromadb | 1.1.0 / 1.5.9 | 本地持久化向量检索 |
@@ -91,8 +95,9 @@
 | UI | streamlit | 1.64.0 | 对话界面与流式渲染 |
 | 文档解析 | pypdf | 6.18.1 | PDF 文本提取 |
 | 配置 | PyYAML / python-dotenv | 6.0.3 / 1.2.3 | YAML 配置、`.env` 加载 |
+| HTTP 客户端 | requests | 2.34.2 | 百度联网搜索 |
 
-模型：`qwen3.5-flash`（对话，经 DashScope OpenAI 兼容模式）；`text-embedding-v4`（向量化）。
+模型：`qwen3.5-flash`（对话，经 DashScope OpenAI 兼容模式）；`text-embedding-v4`（向量化）；`deepseek-v4-flash-0731`（备用对话模型，主模型失败时自动降级）。
 
 ---
 
@@ -125,7 +130,10 @@ uv sync
 | `OPEN_API_KEY` | `model/factory.py` 中 `ChatOpenAI` | 是（注意变量名不是 `OPENAI_API_KEY`） |
 | `BASE_URL_DASHSCOPE` | `ChatOpenAI` 的 OpenAI 兼容端点 | 是 |
 | `DASHSCOPE_API_KEY` | `DashScopeEmbeddings` 隐式读取 | 是 |
-| `DB_URL_POSTGRES`、`BASE_URL_DEEPSEEK`、`API_KEY_DEEPSEEK`、`API_KEY_BAIDU`、`API_HOST_DASHSCOPE` | 当前代码未使用 | 否，预留 |
+| `DB_URL_POSTGRES` | `memorys/postgres_checkpointer.py` | 否；启用 `USE_POSTGRES_CHECKPOINTER=true` 时必需 |
+| `USE_POSTGRES_CHECKPOINTER` | `agent/react_agent.py` | 否；设为 `true` 开启 PostgreSQL 会话持久化 |
+| `API_KEY_BAIDU` | `web_search_baidu` | 否；不配置时工具返回空字符串 |
+| `BASE_URL_DEEPSEEK`、`API_KEY_DEEPSEEK`、`API_HOST_DASHSCOPE` | 当前代码未使用 | 否，预留 |
 
 ### 4.4 构建/更新知识库
 
@@ -170,14 +178,15 @@ project2/
 ├── agent/
 │   ├── react_agent.py          # ✅ Agent 组装与流式执行
 │   └── tools/
-│       ├── agent_tools.py      # ✅ 7 个 @tool
-│       └── middleware.py       # ✅ 3 个中间件
+│       ├── agent_tools.py      # ✅ 8 个 @tool
+│       └── middleware.py       # ✅ 6 个中间件
 ├── rag/
 │   ├── rag_service.py          # ✅ 检索 + 总结 LCEL 链
 │   └── vector_store.py         # ✅ Chroma 入库、检索、MD5 去重
 ├── model/
 │   └── factory.py              # ✅ Chat / Embedding 工厂
 ├── memorys/
+│   ├── postgres_checkpointer.py  # 🧪 PostgreSQL checkpointer（可选）
 │   ├── persistent_memory.py    # 🧪 文件型会话历史实现
 │   └── temporary_memory.py     # 🧪 内存型会话历史实现
 ├── utils/
@@ -207,7 +216,7 @@ project2/
 1. `app.py`：看 UI 如何创建 Agent、如何接收流式输出。
 2. `agent/react_agent.py`：看 `create_agent` 的模型、工具、中间件三要素。
 3. `agent/tools/agent_tools.py`：看工具如何用 `@tool` 描述、如何调用 RAG 与 CSV。
-4. `agent/tools/middleware.py`：看工具监控、模型前日志、动态提示词切换。
+4. `agent/tools/middleware.py`：看工具监控、模型前日志、动态提示词切换、PII 脱敏与模型降级。
 5. `rag/rag_service.py` → `rag/vector_store.py`：看 RAG 查询链与入库流程。
 6. `model/factory.py` → `config/*.yml`：看模型/向量模型与参数如何装配。
 7. `utils/*`：看配置、路径、日志、提示词加载的公共约定。
@@ -221,13 +230,15 @@ project2/
 | 想改什么 | 改哪里 |
 | --- | --- |
 | 换对话模型 / Embedding 模型 | `config/rag.yml` + `model/factory.py` |
+| 设置备用对话模型 | `config/rag.yml` 的 `backup_chat_model_name` |
 | 调检索条数、切分大小、集合名 | `config/chroma.yml` |
 | 换知识库目录、文件类型 | `config/chroma.yml` 的 `data_path` / `allow_knowledge_file_type` |
 | 换外部 CSV 路径 | `config/agent.yml` |
 | 换提示词 | `prompts/*.txt`（RAG 提示词需重启；Agent 系统提示词每次模型调用前重读） |
 | 新增工具 | `agent/tools/agent_tools.py` + `agent/react_agent.py` 的 tools 列表 |
 | 新增场景 | 参考报告场景：工具 + 中间件标记 + 动态提示词 + prompt 文件 |
-| 接入会话记忆 | 参考 `memorys/`，或给 `create_agent` 加 `checkpointer` |
+| 开启会话记忆（PostgreSQL） | `.env` 设置 `USE_POSTGRES_CHECKPOINTER=true`；连接串 `DB_URL_POSTGRES` |
+| 百度联网搜索 | `.env` 的 `API_KEY_BAIDU` |
 
 ---
 
@@ -235,9 +246,9 @@ project2/
 
 先看这 5 条：
 
-1. **Agent 没有跨轮记忆**：`execute_stream` 每次只发送当前问题，`app.py` 的 `session_state["message"]` 仅用于 UI 展示。
+1. **默认没有跨轮记忆**：默认不启用 checkpointer；设置 `USE_POSTGRES_CHECKPOINTER=true` 后，`app.py` 会用 session 级 `thread_id` 持久化会话（需 PostgreSQL）。
 2. **流式输出是“消息块级”而非 token 级**：`stream_mode="values"` 会把每条状态消息的 `content` 直接输出，可能把用户问题、工具返回也当作回答显示。
-3. **提示词文件是占位骨架**：`prompts/main_prompt.txt`、`report_prompt.txt` 目前只有标题，报告场景效果有限。
+3. **PII 脱敏覆盖不完整**：`PIIMiddleware` 只处理模型输入/输出，日志与缓存中的敏感信息尚未脱敏。
 4. **外部数据示例为空**：`data/external/records.csv` 为空，`fetch_external_data` 会查不到记录；CSV 解析也未处理带逗号的引号字段。
 5. **知识库只增不删**：文件内容变化会产生新 MD5 并追加新 chunk，旧向量不会自动清理。
 

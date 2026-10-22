@@ -124,6 +124,7 @@
 | Web UI | streamlit | 1.64.0 | 对话界面、流式渲染、会话状态 | `app.py` |
 | Agent 框架 | langchain | 1.4.0 | `create_agent`、中间件、`@tool` | `agent/react_agent.py` |
 | 图运行时 | langgraph | 1.2.11 | StateGraph、`stream`、运行时 context | 由 `create_agent` 内部使用 |
+| 状态持久化 | langgraph-checkpoint-postgres / psycopg / psycopg-pool | 3.2.0 / 3.3.6 / 3.3.3 | PostgreSQL checkpointer 与连接池 | `memorys/postgres_checkpointer.py` |
 | 核心抽象 | langchain-core | 1.6.5 | Message、Tool、Runnable、Prompt | 全项目 |
 | 模型接入 | langchain-openai | 1.6.6 | `ChatOpenAI` 调用 OpenAI 兼容端点 | `model/factory.py` |
 | 社区集成 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader | `model/factory.py`、`utils/file_handler.py` |
@@ -134,6 +135,7 @@
 | 文档解析 | pypdf | 6.18.1 | PDF 文本提取 | `utils/file_handler.py` |
 | 配置 | PyYAML | 6.0.3 | 读取 `config/*.yml` | `utils/config_handler.py` |
 | 环境变量 | python-dotenv | 1.2.3 | 加载 `.env` | `model/factory.py` |
+| HTTP 客户端 | requests | 2.34.2 | 百度联网搜索 | `agent/tools/agent_tools.py` |
 | 追踪 | langsmith | 0.12.2 | 传递依赖；当前未显式启用 | — |
 
 ### 3.1 框架关系
@@ -153,7 +155,7 @@ flowchart LR
 关键点：
 
 - `create_agent` 返回的是 LangGraph 的 `CompiledStateGraph`，不是旧版 `AgentExecutor`。
-- 中间件是 LangChain 1.x Agent 的扩展机制，本项目用了三种：`wrap_tool_call`、`before_model`、`dynamic_prompt`。
+- 中间件是 LangChain 1.x Agent 的扩展机制，本项目用了 `wrap_tool_call`、`before_model`、`dynamic_prompt`，并接入内置的 `PIIMiddleware` 与 `ModelFallbackMiddleware`。
 - RAG 不依赖 Agent 框架，是一条独立 LCEL 链（`PromptTemplate | ChatModel | StrOutputParser`），再作为一个工具暴露给 Agent。
 - `langchain-community` 已进入 sunset（安装/导入时会出现 DeprecationWarning），当前 `DashScopeEmbeddings` 仍来自该包；长期应迁移到独立集成包，或直接用 `dashscope` SDK 封装一个 `Embeddings` 实现。
 
@@ -168,10 +170,10 @@ flowchart LR
 | 层 | 组成 | 职责 | 关键约束 |
 | --- | --- | --- | --- |
 | L1 表现层 | `app.py`、`app_file_uploader.py` | 收集输入、展示流式输出、保存 UI 会话状态 | 不直接调用模型/工具 |
-| L2 编排层 | `ReactAgent`、`create_agent`、三个中间件 | 组装模型/工具/提示词，驱动 ReAct 循环 | 模型决定工具调用顺序 |
-| L3 工具层 | 7 个 `@tool` 函数 | 把外部能力封装成模型可调用的工具 | 入参/返回需可序列化 |
+| L2 编排层 | `ReactAgent`、`create_agent`、六个中间件 | 组装模型/工具/提示词，驱动 ReAct 循环 | 模型决定工具调用顺序 |
+| L3 工具层 | 8 个 `@tool` 函数 | 把外部能力封装成模型可调用的工具 | 入参/返回需可序列化 |
 | L4 服务层 | `RagSummarizeService`、`VectorStoreService`、`PromptLoader` | RAG 检索与总结、向量入库、提示词加载 | 与 Agent 解耦，可单独测试 |
-| L5 模型/存储层 | `ChatOpenAI`、`DashScopeEmbeddings`、Chroma、本地文件 | 模型推理、向量化、持久化 | 模型/维度变更需重建向量库 |
+| L5 模型/存储层 | `ChatOpenAI`、`DashScopeEmbeddings`、Chroma、PostgreSQL（可选）、本地文件 | 模型推理、向量化、持久化 | 模型/维度变更需重建向量库 |
 | L6 横切层 | `config/`、`prompts/`、`utils/`、`logs/`、`env_patch/` | 配置、路径、日志、编码补丁 | 启动时加载，运行时只读为主 |
 
 ### 4.2 关键设计决策
@@ -192,6 +194,7 @@ flowchart LR
 | 主链路 | `app.py` → `agent/react_agent.py` → `agent/tools/*` → `rag/*` → `model/factory.py` | 一次对话实际执行的路径 |
 | 主链路依赖 | `utils/*`、`config/*`、`prompts/*`、`data/*`、`chroma_db/*` | 被主链路读取/写入 |
 | 实验/预留 | `memorys/persistent_memory.py`、`memorys/temporary_memory.py`、`app_file_uploader.py` | 有实现或骨架，但主链路未 import |
+| 可选链路 | `memorys/postgres_checkpointer.py` | `USE_POSTGRES_CHECKPOINTER=true` 时由 `ReactAgent` 延迟加载，用于会话状态持久化 |
 | 模板/临时 | `main.py`、`test1.py` | 无业务逻辑，可删除或替换 |
 
 ---
@@ -214,14 +217,15 @@ project2/
 ├── agent/
 │   ├── react_agent.py           # ✅ Agent 组装 + 流式执行
 │   └── tools/
-│       ├── agent_tools.py       # ✅ 7 个工具 + 外部数据加载
-│       └── middleware.py        # ✅ 3 个中间件
+│       ├── agent_tools.py       # ✅ 8 个工具 + 外部数据加载
+│       └── middleware.py        # ✅ 6 个中间件
 ├── rag/
 │   ├── rag_service.py           # ✅ 检索 + 总结 LCEL 链
 │   └── vector_store.py          # ✅ Chroma 入库/检索/MD5
 ├── model/
 │   └── factory.py               # ✅ Chat/Embedding 工厂
 ├── memorys/
+│   ├── postgres_checkpointer.py # 🧪 PostgreSQL checkpointer（可选）
 │   ├── persistent_memory.py     # 🧪 文件型会话历史
 │   └── temporary_memory.py      # 🧪 内存型会话历史
 ├── utils/
@@ -245,9 +249,9 @@ project2/
 | 模块 | 关键符号 | 职责 | 上游/下游 |
 | --- | --- | --- | --- |
 | `app.py` | `st.session_state`、`execute_stream`、`capture`、`write_stream` | 页面渲染；首次创建 `ReactAgent`；收集流式输出；`st.rerun()` 刷新 | 上游：用户；下游：`ReactAgent` |
-| `agent/react_agent.py` | `ReactAgent.__init__`、`execute_stream` | 用 `create_agent` 组装模型、7 个工具、3 个中间件；以 `stream_mode="values"` 输出 | 上游：`app.py`；下游：模型、工具、中间件 |
-| `agent/tools/agent_tools.py` | `rag_summarize`、`get_weather`、`get_user_location`、`get_user_id`、`get_current_month`、`fetch_external_data`、`fill_context_for_report` | 工具实现；模块级 `rag = RagSummarizeService()`；CSV 懒加载缓存 | 上游：模型 tool_call；下游：RAG、CSV |
-| `agent/tools/middleware.py` | `monitor_tool`、`log_before_model`、`report_prompt_switch` | 工具日志/场景标记、模型前日志、动态提示词 | 被 `create_agent` 调用 |
+| `agent/react_agent.py` | `ReactAgent.__init__`、`execute_stream`、`_build_checkpointer` | 用 `create_agent` 组装模型、8 个工具、6 个中间件；以 `stream_mode="values"` 输出；可选 checkpointer + `thread_id` | 上游：`app.py`；下游：模型、工具、中间件 |
+| `agent/tools/agent_tools.py` | `rag_summarize`、`get_weather`、`get_user_location`、`get_user_id`、`get_current_month`、`fetch_external_data`、`fill_context_for_report`、`web_search_baidu` | 工具实现；模块级 `rag = RagSummarizeService()`；CSV 懒加载缓存；百度联网搜索 | 上游：模型 tool_call；下游：RAG、CSV、百度 AI Search |
+| `agent/tools/middleware.py` | `monitor_tool`、`log_before_model`、`report_prompt_switch`、`pii_middleware_email`、`pii_middleware_phone`、`model_fallback_middleware` | 工具日志/场景标记、模型前日志、动态提示词、PII 脱敏、模型降级 | 被 `create_agent` 调用 |
 | `rag/rag_service.py` | `RagSummarizeService`、`_init_chain`、`retriever_docs`、`rag_summarize` | 检索文档、拼装 context、调用 LCEL 链生成总结 | 上游：`rag_summarize` 工具；下游：Chroma、ChatModel |
 | `rag/vector_store.py` | `VectorStoreService`、`load_document`、`get_retriever`、`check_md5_hex`、`save_md5_hex` | Chroma 初始化、文本切分、入库、MD5 去重、检索器 | 上游：手动入库/`RagSummarizeService`；下游：Chroma、Embedding |
 | `model/factory.py` | `BaseModelFactory`、`ChatModelFactory`、`EmbeddingsFactory`、`chat_model`、`embed_model` | 创建 Chat/Embedding 单例；加载 `.env` | 被 RAG、工具、Agent 使用 |
@@ -258,6 +262,7 @@ project2/
 | `utils/logger_handler.py` | `get_logger`、`logger` | 控制台 INFO + 按日文件 DEBUG；幂等 Handler | 被工具/中间件/入库使用 |
 | `memorys/persistent_memory.py` | `FileChatMessageHistory`、`conversation_chain` | 文件型会话历史 + `RunnableWithMessageHistory` 示例 | 🧪 未接入主链路 |
 | `memorys/temporary_memory.py` | `store`、`conversation_chain` | 内存型会话历史示例 | 🧪 未接入主链路 |
+| `memorys/postgres_checkpointer.py` | `get_checkpointer`、`close_pool` | PostgreSQL checkpointer（连接池 + 幂等建表）；`USE_POSTGRES_CHECKPOINTER=true` 时由 `ReactAgent` 延迟加载 | 被 `agent/react_agent.py` 使用 |
 | `app_file_uploader.py` | 无 | 预留的文件上传页面 | 🧪 空壳 |
 
 ### 5.3 模块依赖关系
@@ -269,6 +274,9 @@ flowchart TB
     RA --> PL[utils/prompt_loader.py]
     RA --> AT[agent/tools/agent_tools.py]
     RA --> MW[agent/tools/middleware.py]
+    MW --> MF
+    MW --> CH
+    RA -.->|USE_POSTGRES_CHECKPOINTER=true| PG[(PostgreSQL)]
     AT --> RS[rag/rag_service.py]
     AT --> CH[utils/config_handler.py]
     AT --> LG[utils/logger_handler.py]
@@ -298,6 +306,8 @@ flowchart TB
    - `load_rag_prompts()` 读取 RAG 提示词；
    - 构建 `PromptTemplate` 与 LCEL 链。
 4. `utils.logger_handler` 被 import 时创建 `logs/` 并注册控制台/文件 Handler。
+5. `agent.tools.middleware` 被 import 时会创建 `PIIMiddleware` 与备用 `ChatOpenAI` 实例（读取 `backup_chat_model_name`），但不会连接 PostgreSQL。
+6. PostgreSQL 连接只发生在 `USE_POSTGRES_CHECKPOINTER=true` 且 `ReactAgent` 初始化时，由 `get_checkpointer()` 惰性建立；默认关闭。
 
 影响：
 
@@ -324,10 +334,10 @@ sequenceDiagram
 
     U->>UI: 输入问题
     UI->>RA: execute_stream(query)
-    RA->>RA: messages=[user] + context={"report": False}
+    RA->>RA: messages=[user] + context={"report": False} + config={thread_id}
     loop LangGraph ReAct 循环
-        RA->>MW: before_model / dynamic_prompt
-        MW->>MW: 记录状态 + 选择系统提示词
+        RA->>MW: ModelFallback → PII → before_model / dynamic_prompt
+        MW->>MW: 降级兜底 + 脱敏 + 记录状态 + 选择系统提示词
         RA->>M: 调用模型（已绑定工具）
         alt 模型返回 tool_calls
             M-->>RA: AIMessage(tool_calls)
@@ -362,8 +372,13 @@ create_agent(
     tools=[
         rag_summarize, get_weather, get_user_location, get_user_id,
         get_current_month, fetch_external_data, fill_context_for_report,
+        web_search_baidu,
     ],
-    middleware=[monitor_tool, log_before_model, report_prompt_switch],
+    middleware=[
+        model_fallback_middleware, pii_middleware_email, pii_middleware_phone,
+        monitor_tool, log_before_model, report_prompt_switch,
+    ],
+    checkpointer=_build_checkpointer(),  # 默认 None；USE_POSTGRES_CHECKPOINTER=true 时启用
 )
 ```
 
@@ -373,12 +388,13 @@ create_agent(
 
 ```python
 input_dict = {"messages": [{"role": "user", "content": query}]}
-agent.stream(input_dict, stream_mode="values", context={"report": False})
+config = {"configurable": {"thread_id": thread_id}} if thread_id else None
+agent.stream(input_dict, stream_mode="values", context={"report": False}, config=config)
 ```
 
 注意：
 
-- 只发送当前问题，不附带历史消息 → 无跨轮记忆。
+- 只发送当前问题；未启用 checkpointer 时无跨轮记忆，启用后由 `thread_id` 恢复历史。
 - `context` 是每次请求新建的字典 → 报告标记不会泄漏到下一次请求。
 - `stream_mode="values"` 表示“每一步后输出完整状态”，不是 token 流。
 
@@ -386,11 +402,13 @@ agent.stream(input_dict, stream_mode="values", context={"report": False})
 
 LangGraph 内部循环：
 
-1. `before_model`：记录消息数量与最后一条消息。
-2. `dynamic_prompt`：根据 `runtime.context["report"]` 返回主提示词或报告提示词。
-3. 模型返回 `AIMessage`：可能带 `tool_calls`，也可能直接是最终答案。
-4. 若有 `tool_calls`，`wrap_tool_call` 包装的工具节点执行工具，生成 `ToolMessage`。
-5. 回到模型，直到没有新的 `tool_calls`。
+1. `ModelFallbackMiddleware` 包裹模型调用：主模型失败时自动切换备用模型。
+2. `PIIMiddleware` 在输入侧 mask 手机号、输出侧 redact 邮箱。
+3. `before_model`：记录消息数量与最后一条消息。
+4. `dynamic_prompt`：根据 `runtime.context["report"]` 返回主提示词或报告提示词。
+5. 模型返回 `AIMessage`：可能带 `tool_calls`，也可能直接是最终答案。
+6. 若有 `tool_calls`，`wrap_tool_call` 包装的工具节点执行工具，生成 `ToolMessage`。
+7. 回到模型，直到没有新的 `tool_calls`。
 
 **步骤 5：流式输出**
 
@@ -433,13 +451,14 @@ ToolMessage("城市深圳天气为晴天...")
 AIMessage("深圳今天晴天，26℃...")
 ```
 
-### 6.4 为什么没有多轮记忆
+### 6.4 多轮记忆（默认关闭）
 
-- `create_agent` 没有传 `checkpointer`。
-- `execute_stream` 每次只传一条 `HumanMessage`。
-- `app.py` 的 `session_state["message"]` 是 UI 展示列表，不会回传给 Agent。
+- 默认 `checkpointer=None`，`create_agent` 不持久化状态。
+- `execute_stream` 每次只传一条 `HumanMessage`；`thread_id` 由 `app.py` 的 session 生成。
+- 设置 `USE_POSTGRES_CHECKPOINTER=true` 后，`ReactAgent` 会通过 `memorys/postgres_checkpointer.py` 建立 PostgreSQL checkpointer，同一 `thread_id` 的会话状态可跨请求保留。
+- 未开启时，“刚才提到的用户 ID”“上一轮报告结论”这类上下文不会自动保留。
 
-因此“刚才提到的用户 ID”“上一轮报告结论”这类上下文不会自动保留。接入方式见 13.4。
+接入细节见 13.4。
 
 ### 6.5 错误路径
 
@@ -489,7 +508,7 @@ AIMessage("深圳今天晴天，26℃...")
 | 1. 工具调用 | `agent_tools.rag_summarize` | 工具描述告诉模型“从向量存储中检索参考资料” |
 | 2. 取回文档 | `RagSummarizeService.retriever_docs` | `Chroma.as_retriever(search_kwargs={"k": 3})` |
 | 3. 拼装 context | `rag_summarize` | 每条文档格式化为 `【参考资料N】： content | 元数据： metadata` |
-| 4. 渲染提示词 | `PromptTemplate.from_template(load_rag_prompts())` | 模板变量：`{input}`、`{context}` |
+| 4. 渲染提示词 | `PromptTemplate.from_template(load_rag_prompts())` | 模板变量：`{input}`、`{context}`；已内置忠实度、拒答、引用编号、指令隔离约束 |
 | 5. 生成 | `chat_model` | `qwen3.5-flash` |
 | 6. 解析 | `StrOutputParser` | 返回纯字符串给 Agent |
 
@@ -498,6 +517,8 @@ LCEL 链：
 ```python
 prompt_template | chat_model | StrOutputParser()
 ```
+
+提示词约束：事实忠实、证据不足拒答、引用编号、指令隔离（见 `prompts/rag_summarize.txt`）。
 
 ### 7.3 参数影响
 
@@ -535,6 +556,7 @@ prompt_template | chat_model | StrOutputParser()
 2. `monitor_tool` 在工具执行成功后设置 `request.runtime.context["report"] = True`。
 3. 下一次模型调用前，`report_prompt_switch` 读取该标记，返回 `prompts/report_prompt.txt`。
 4. 模型在报告提示词约束下继续生成。
+5. `PIIMiddleware` 与 `ModelFallbackMiddleware` 在模型调用外层生效，不参与场景标记与提示词选择。
 
 ```mermaid
 sequenceDiagram
@@ -560,11 +582,11 @@ sequenceDiagram
 - 标记只影响**后续**模型调用，不会改写已经发出的那次请求。
 - 客户端不能直接设置该标记；必须由模型调用工具触发。
 
-### 8.3 当前问题
+### 8.3 当前约束
 
-- `prompts/report_prompt.txt` 只有标题骨架，报告输出质量有限。
-- 主提示词 `prompts/main_prompt.txt` 同样只有标题，模型行为主要依赖默认能力。
-- 如果主提示词没有明确要求“报告场景调用 `fill_context_for_report`”，模型可能永远不会触发切换。
+- `prompts/report_prompt.txt` 与 `prompts/main_prompt.txt` 已补全角色、工具规则、输出结构与边界，但仍是通用模板，需按业务持续迭代。
+- 主提示词已明确要求报告场景先调用 `fill_context_for_report`；若后续修改提示词，必须保留该约束，否则场景切换不会触发。
+- 报告效果仍受外部 CSV 数据质量限制。
 
 ### 8.4 新增一个场景
 
@@ -601,6 +623,10 @@ import agent.tools.agent_tools
        ├─ VectorStoreService() -> Chroma
        ├─ load_rag_prompts()
        └─ 构建 LCEL 链
+
+import agent.tools.middleware
+  ├─ 创建 PIIMiddleware（邮箱/手机号）
+  └─ 创建备用 ChatOpenAI（读取 backup_chat_model_name；不连接 PostgreSQL）
 ```
 
 ### 9.2 `config/rag.yml`
@@ -608,6 +634,7 @@ import agent.tools.agent_tools
 | 键 | 当前值 | 作用 | 修改影响 |
 | --- | --- | --- | --- |
 | `chat_model_name` | `qwen3.5-flash` | 对话模型名 | 需模型支持工具调用；重启生效 |
+| `backup_chat_model_name` | `deepseek-v4-flash-0731` | 备用对话模型名 | 主模型调用失败时由 `ModelFallbackMiddleware` 自动切换 |
 | `embedding_model_name` | `text-embedding-v4` | 向量模型名 | 维度变化必须重建 Chroma |
 
 ### 9.3 `config/chroma.yml`
@@ -647,11 +674,12 @@ import agent.tools.agent_tools
 | `OPEN_API_KEY` | `model/factory.py` → `ChatOpenAI(openai_api_key=...)` | 是 | 注意不是 `OPENAI_API_KEY`；命名遗留 |
 | `BASE_URL_DASHSCOPE` | `model/factory.py` → `ChatOpenAI(openai_api_base=...)` | 是 | DashScope OpenAI 兼容端点 |
 | `DASHSCOPE_API_KEY` | `DashScopeEmbeddings` 内部读取 | 是 | 未显式传入时由 SDK 读取 |
-| `DB_URL_POSTGRES` | 未使用 | 否 | 预留数据库连接串 |
+| `DB_URL_POSTGRES` | `memorys/postgres_checkpointer.py` | 否 | PostgreSQL 连接串；启用 `USE_POSTGRES_CHECKPOINTER` 时必需 |
 | `API_HOST_DASHSCOPE` | 未使用 | 否 | 预留 |
 | `BASE_URL_DEEPSEEK` | 未使用 | 否 | 预留 DeepSeek 接入 |
 | `API_KEY_DEEPSEEK` | 未使用 | 否 | 预留 |
-| `API_KEY_BAIDU` | 未使用 | 否 | 预留 |
+| `API_KEY_BAIDU` | `agent/tools/agent_tools.py` → `web_search_baidu` | 否 | 百度 AI Search 密钥；不配置时工具返回空字符串 |
+| `USE_POSTGRES_CHECKPOINTER` | `agent/react_agent.py` | 否 | 设为 `true` 时启用 PostgreSQL checkpointer；默认关闭 |
 
 ### 9.7 路径解析
 
@@ -725,14 +753,15 @@ md5.text
 memorys/chat_history/
 ```
 
-### 10.3 会话记忆模块（未接线）
+### 10.3 会话记忆模块
 
 | 文件 | 存储 | 特点 | 现状 |
 | --- | --- | --- | --- |
+| `memorys/postgres_checkpointer.py` | PostgreSQL | `PostgresSaver` + `ConnectionPool`；幂等建表；`USE_POSTGRES_CHECKPOINTER=true` 时由 `ReactAgent` 加载 | ✅ 可选接入 |
 | `memorys/temporary_memory.py` | 进程内 `dict` | 重启即失；适合单进程演示 | 🧪 独立示例 |
 | `memorys/persistent_memory.py` | `memorys/chat_history/<session_id>` JSON | 自己实现 `BaseChatMessageHistory`；用 `RunnableWithMessageHistory` 自动附加历史 | 🧪 独立示例 |
 
-两者都**没有**被 `app.py` / `ReactAgent` import。接入建议见 13.4。
+`temporary_memory.py` / `persistent_memory.py` 仍未被主链路 import；checkpointer 需显式开启。接入建议见 13.4。
 
 ### 10.4 向量库
 
@@ -772,6 +801,8 @@ uv run -m rag.vector_store
 | `monitor_tool` | 工具名、参数、成功/失败 | `agent/tools/middleware.py` |
 | `log_before_model` | 消息数量、最后一条消息类型与内容（DEBUG） | 同上 |
 
+`PIIMiddleware` / `ModelFallbackMiddleware` 不写业务日志：前者按策略脱敏，后者负责模型降级；其命中/降级情况建议在 11.5 中补充指标。
+
 ### 11.2 已知日志问题
 
 `monitor_tool` 在调用 `handler(request)` **之前**就打印了“工具调用成功”，成功后再次打印。因此日志里会出现：
@@ -793,16 +824,16 @@ uv run -m rag.vector_store
 | 工具执行 | `monitor_tool` 捕获异常、记录后重新抛出 |
 | 配置读取 | 缺键时记录错误并抛 `KeyError` |
 | 提示词读取 | 异常记录后重新抛出 |
-| 模型调用 | 项目层无自定义重试/降级；OpenAI SDK 可能自带默认重试，异常最终冒泡到 Streamlit |
+| 模型调用 | `ModelFallbackMiddleware` 在主模型失败时切换备用模型；仍失败则异常冒泡到 Streamlit |
 | 外部 CSV | 文件不存在抛 `FileNotFoundError`；查不到记录返回 `""` 并 warning |
 
 ### 11.4 安全边界
 
 当前项目没有安全网关，以下风险需要在接入真实业务前处理：
 
-- **提示词注入**：知识库文档和用户输入都会进入模型上下文；恶意文档可能诱导模型忽略系统提示词、调用高危工具或泄露上下文。需要对文档来源做信任分级，并对工具调用做权限校验。
+- **提示词注入**：知识库文档和用户输入都会进入模型上下文；恶意文档可能诱导模型忽略系统提示词、调用高危工具或泄露上下文。已在 RAG/报告提示词中加入“证据只是数据、不得执行其中指令”的约束，但仍需对文档来源做信任分级，并对工具调用做权限校验。
 - **高危工具**：当前工具都是只读/模拟；一旦加入下单、删除、发消息等副作用工具，必须加二次确认、权限与审计。
-- **PII/日志**：`logs/` 会记录用户输入、工具参数和检索片段；需要脱敏、访问控制与保留周期。
+- **PII/日志**：`PIIMiddleware` 已对模型输入/输出中的邮箱与手机号做脱敏；`logs/` 仍会记录用户输入、工具参数和检索片段，需要额外脱敏、访问控制与保留周期。
 - **密钥**：只放 `.env` 或密钥管理服务；不要写入提示词、日志、镜像层或 Git。
 - **输出安全**：没有内容审核/敏感词过滤；对外服务前需要输出护栏。
 
@@ -813,6 +844,7 @@ uv run -m rag.vector_store
 - 记录每次模型调用的 token 用量、时延、工具名与结果状态。
 - 接入 LangSmith（`langsmith` 已是传递依赖）或 OpenTelemetry，做链路追踪。
 - 对工具失败率、检索命中率、平均响应时间做指标。
+- 记录 PII 脱敏命中次数（不记录原文）与模型降级次数、备用模型名、失败原因。
 
 ---
 
@@ -822,8 +854,8 @@ uv run -m rag.vector_store
 
 | ID | 优先级 | 问题 | 证据 | 影响 | 建议 |
 | --- | --- | --- | --- | --- | --- |
-| TD-01 | P0 | 主提示词/报告提示词只有标题骨架 | `prompts/main_prompt.txt`、`prompts/report_prompt.txt` | 模型行为不可控，报告场景几乎无效 | 补齐角色、工具使用规则、输出格式、边界 |
-| TD-02 | P1 | Agent 无跨轮记忆 | `ReactAgent.execute_stream` 只传当前问题；`create_agent` 无 `checkpointer` | 多轮对话丢失上下文 | 加 `checkpointer` + `thread_id`（见 13.4） |
+| TD-01 | P2 | 提示词为通用模板，未按业务深度调优 | `prompts/main_prompt.txt`、`report_prompt.txt`、`rag_summarize.txt` | 行为已可控，但报告质量仍依赖数据与迭代 | 用 Golden Set/线上 badcase 持续迭代 |
+| TD-02 | P2 | 会话记忆默认关闭 | 默认 `checkpointer=None`；开启需 PostgreSQL 与 `USE_POSTGRES_CHECKPOINTER=true` | 多轮对话默认丢失上下文 | 生产环境开启并压测；补充会话隔离/清理策略 |
 | TD-03 | P1 | `values` 流把用户问题/工具结果当回答输出 | `stream_mode="values"` + 取 `messages[-1].content` | 页面出现重复问题、工具原始结果 | 只过滤 `AIMessage`，或改用 `stream_mode="messages"` |
 | TD-04 | P1 | UI 历史只保存最后一个 chunk | `response_messages[-1]` | 刷新后中间过程消失；流为空时 `IndexError` | 保存完整消息列表；对空流做保护 |
 | TD-05 | P1 | `fetch_external_data` 返回类型与注解不符 | 注解 `-> str`，实际返回 `dict` | 工具输出被 JSON 字符串化；契约不清晰 | 统一返回 `str`（JSON）或改注解；补 Pydantic 模型 |
@@ -834,7 +866,7 @@ uv run -m rag.vector_store
 | TD-10 | P2 | `model/factory.py` 重复 import 与遗留代码 | 两次 import `ChatOpenAI`；`ChatTongyi` 未使用；`BaseChatModel` 来源不规范 | 可读性差，易误用 | 清理为 `from langchain_openai import ChatOpenAI`；删注释代码 |
 | TD-11 | P2 | `OPEN_API_KEY` 命名易错 | `os.getenv("OPEN_API_KEY")` | 新成员常写成 `OPENAI_API_KEY` 导致认证失败 | 改名 `OPENAI_API_KEY`，或同时兼容两者 |
 | TD-12 | P2 | `monitor_tool` 成功日志早于执行 | 先打印成功，再 `handler(request)` | 排障误判 | 把“成功”日志移到 `handler` 之后 |
-| TD-13 | P2 | `pyproject.toml` 依赖可疑/缺失 | 声明 `callable`、`command`、`datetime`、`logger`；直接 import 的 `langgraph`、`langchain-text-splitters` 未声明 | 环境可复现性差；误装包 | 清理无用依赖；把直接使用包写入 `dependencies` |
+| TD-13 | P2 | `pyproject.toml` 依赖可疑/缺失 | 仍声明 `callable`、`command`、`datetime`、`logger`；直接 import 的 `langchain-text-splitters` 未显式声明（`langgraph` 现由 `langchain`/`langgraph-checkpoint-postgres` 传递提供） | 环境可复现性差；误装包 | 清理无用依赖；把直接使用包写入 `dependencies` |
 | TD-14 | P2 | `yaml.FullLoader` 非最安全 | `config_handler.py` | 恶意 YAML 有风险（本地配置场景较低） | 改用 `yaml.safe_load` |
 | TD-15 | P2 | `md5.text` 非原子、无并发保护 | `open(..., "a")` | 并发入库重复/丢记录 | 加文件锁/临时文件原子替换 |
 | TD-16 | P2 | 运行产物被 Git 跟踪 | `git ls-files` 含 `__pycache__`、`chroma_db`、`logs`、`md5.text`、`chat_history` | 仓库膨胀、泄漏用户内容 | 按 10.2 清理并补 `.gitignore` |
@@ -848,16 +880,15 @@ uv run -m rag.vector_store
 | TD-24 | P3 | `utils/runtime.py` 约定未落地 | 仓库中无该文件；实际靠 `env_patch` | 规范与实现不一致 | 补齐 `runtime.setup_runtime()` 并在入口调用 |
 | TD-25 | P3 | 工具返回模拟数据 | `get_weather`、`get_user_location`、`get_user_id`、`get_current_month` | 演示可以，真实业务不可用 | 替换为真实 API/数据库，加超时与降级 |
 | TD-26 | P3 | 项目命名不一致 | `pyproject.toml` 的 `name = "project1"`、目录 `project2`、`.venv` prompt 为 `project1` | 新成员困惑，包名/镜像名易错 | 统一项目名，更新 `pyproject` 与文档 |
-| TD-27 | P2 | 无提示词注入/内容安全防护 | RAG 文档与用户输入直接进入上下文；无输出审核 | 恶意文档/输入可诱导模型越权或泄露上下文 | 文档信任分级、工具权限、输入/输出护栏 |
+| TD-27 | P2 | 提示词注入/内容安全防护仍不完整 | 提示词已加指令隔离；无输出审核、工具权限 | 恶意文档/输入仍可能诱导越权 | 文档信任分级、工具权限、输入/输出护栏 |
 
 ### 12.1 建议修复顺序
 
-1. **TD-01**：先把提示词补完整，否则 Agent 行为无法稳定评估。
-2. **TD-03/TD-04**：修流式输出过滤与 UI 历史，直接改善演示效果。
-3. **TD-02**：接入会话记忆，让多轮场景成立。
-4. **TD-05/TD-06/TD-07**：把外部数据与知识库更新链路做可靠。
-5. **TD-09/TD-13/TD-17**：做工程化收口（惰性初始化、依赖、测试）。
-6. **TD-08/TD-16/TD-18**：上线前完成安全、仓库与向量库迁移治理。
+1. **TD-03/TD-04**：修流式输出过滤与 UI 历史，直接改善演示效果。
+2. **TD-05/TD-06/TD-07**：把外部数据与知识库更新链路做可靠。
+3. **TD-02**：按部署形态开启 checkpointer，并验证会话隔离与清理。
+4. **TD-09/TD-13/TD-17**：做工程化收口（惰性初始化、依赖、测试）。
+5. **TD-08/TD-16/TD-18/TD-27**：上线前完成安全、仓库、向量库迁移与内容安全治理。
 
 ---
 
@@ -907,6 +938,7 @@ uv run -m agent.react_agent
 - 工具内部不要吞掉所有异常后返回空字符串而不记录日志；至少记录 warning/error。
 - 有副作用的工具（下单、删除、发送消息）需要额外的确认/权限控制。
 - 长耗时工具考虑异步 `async def`，并设置超时。
+- 新增/删除工具后，同步更新 README 能力表、本文 5.2、PROJECT_OVERVIEW 第 3 节与 `architecture.svg` 工具层，并更新主提示词中的工具说明。
 
 ### 13.2 新增 RAG 数据源
 
@@ -973,31 +1005,27 @@ if uploaded and st.button("入库"):
 
 ### 13.4 接入会话记忆
 
-**方案 A：LangGraph Checkpointer（推荐）**
+**方案 A：LangGraph Checkpointer（已实现，可选开启）**
+
+项目已提供 `memorys/postgres_checkpointer.py`，由 `ReactAgent` 在 `USE_POSTGRES_CHECKPOINTER=true` 时延迟加载：
 
 ```python
-from langgraph.checkpoint.memory import InMemorySaver
+# .env
+USE_POSTGRES_CHECKPOINTER=true
+DB_URL_POSTGRES=postgresql://...
 
-agent = create_agent(
-    model=chat_model,
-    tools=[...],
-    middleware=[...],
-    checkpointer=InMemorySaver(),
-)
+# app.py 为每个浏览器会话生成 thread_id
+st.session_state["thread_id"] = str(uuid.uuid4())
 
-for chunk in agent.stream(
-    {"messages": [{"role": "user", "content": query}]},
-    stream_mode="values",
-    context={"report": False},
-    config={"configurable": {"thread_id": session_id}},
-):
-    ...
+# ReactAgent.execute_stream 内部
+config = {"configurable": {"thread_id": thread_id}} if thread_id else None
+agent.stream(..., context={"report": False}, config=config)
 ```
 
-- `thread_id` 建议用 Streamlit 的会话 ID（每个浏览器会话一个）。
-- 同时给 `ReactAgent.execute_stream` 增加 `session_id` 参数，并把它放进 `config`；否则 UI 侧无法把会话传给 Agent。
-- `InMemorySaver` 重启即失；生产用 SQLite/Postgres checkpointer（需额外依赖）。
-- 多 worker 部署时必须用外部 checkpointer（Redis/Postgres），否则会话会漂移。
+- `thread_id` 用 Streamlit 的会话 ID（每个浏览器会话一个）。
+- 默认关闭；未安装 `psycopg` 或没有 PostgreSQL 时项目仍可正常启动。
+- `PostgresSaver.setup()` 幂等建表；生产环境建议配合连接池上限、备份与清理策略。
+- 多 worker 部署时，所有 worker 必须共享同一个 PostgreSQL，否则会话会漂移。
 
 **方案 B：手动拼接历史**
 
@@ -1237,6 +1265,7 @@ uv run streamlit run app.py --server.port 8501 --server.address 0.0.0.0
 | 路径工具 | `utils/path_tool.py` |
 | 文件/MD5 | `utils/file_handler.py` |
 | 日志 | `utils/logger_handler.py` |
+| 会话持久化 | `memorys/postgres_checkpointer.py` |
 | 配置 | `config/*.yml` |
 | 提示词 | `prompts/*.txt` |
 | 环境补丁 | `env_patch/` |

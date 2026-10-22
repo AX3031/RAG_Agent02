@@ -1,5 +1,6 @@
 import os.path
 
+import requests
 from langchain_core.tools import tool
 from rag.rag_service import RagSummarizeService
 import random
@@ -105,5 +106,111 @@ def fetch_external_data(user_id: str,month:str)-> str:
 def fill_context_for_report():
     return "fill_context_for_report已调用"
 
+
+@tool(description="调用百度联网搜索实时信息，输入字符串查询内容，以纯字符串形式返回搜索结果")
+def web_search_baidu(query: str, **kwargs) -> str:
+    api_key_baidu = os.getenv("API_KEY_BAIDU")
+    baidu_websearch_url = "https://qianfan.baidubce.com/v2/ai_search/chat/completions"
+
+    headers = {
+        "Content-Type": "application/json",
+        "Authorization": f"Bearer {api_key_baidu}"
+    }
+    payload = {
+        "messages": [{"role": "user", "content": query}],
+        "search_source": "baidu_search_v2",
+        "resource_type_filter": [{"type": "web", "top_k": 5},
+                                 {"type": "image", "top_k": 3},
+                                 {"type": "video", "top_k": 2}],
+    }
+
+    try:
+        response = requests.post(baidu_websearch_url, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        data = response.json()
+    except Exception as e:
+        logger.warning(f"[web_search_baidu]调用百度AI搜索失败：{e}")
+        return ""
+
+    def _pick_text(*vals) -> str:
+        """按优先级从若干候选字段中挑出第一个非空字符串。"""
+        for v in vals:
+            if isinstance(v, str) and v.strip():
+                return v.strip()
+        return ""
+
+    def _truncate(text: str, limit: int = 600) -> str:
+        """截断过长摘要，避免单条 reference 挤占上下文。"""
+        if not text:
+            return ""
+        return text if len(text) <= limit else text[:limit] + "…"
+
+    parts = []
+    ref_blocks = []
+    for ref in data.get("references") or []:
+        rtype = (ref.get("type") or "").lower()
+        title = _pick_text(ref.get("title"))
+        url = _pick_text(ref.get("url"))
+        # 摘要优先级：正文 content > 简介 snippet > markdown_content
+        summary = _truncate(_pick_text(
+            ref.get("content"), ref.get("snippet"), ref.get("markdown_content")
+        ))
+        source = _pick_text(ref.get("website"), ref.get("web_anchor"))
+        date = _pick_text(ref.get("date"))
+
+        # 完全没有标题/摘要/链接的脏数据，丢弃
+        if not (title or summary or url):
+            continue
+
+        # 类型标签：区分 image/video/web，并标注权威来源
+        kind_tag = rtype or "unknown"
+        if ref.get("is_aladdin"):
+            kind_tag += "|权威百科"
+        elif ref.get("authority_score"):
+            kind_tag += f"|权威度{ref['authority_score']}"
+
+        lines = [f"[{ref.get('id', '')}] {title or '(无标题)'}",
+                 f"- 类型：{kind_tag}"]
+
+        # 图片专用：输出图片直链 + 尺寸，其余字段能省则省
+        if rtype == "image":
+            img = ref.get("image") or {}
+            img_url = _pick_text(img.get("url"))
+            w, h = img.get("width"), img.get("height")
+            if img_url:
+                lines.append(f"- 图片：{img_url}")
+            if w and h:
+                lines.append(f"- 尺寸：{w}x{h}")
+            if date:
+                lines.append(f"- 时间：{date}")
+            if url:
+                lines.append(f"- 链接：{url}")
+            ref_blocks.append("\n".join(lines))
+            continue
+
+        if source:
+            lines.append(f"- 来源：{source}")
+        if date:
+            lines.append(f"- 时间：{date}")
+        if rtype == "video":
+            duration = (ref.get("video") or {}).get("duration")
+            if duration:
+                lines.append(f"- 时长：{duration}s")
+        if summary:
+            lines.append(f"- 摘要：{summary}")
+        if url:
+            lines.append(f"- 链接：{url}")
+        ref_blocks.append("\n".join(lines))
+
+    if ref_blocks:
+        parts.append("【参考文献】\n" + "\n\n".join(ref_blocks))
+
+    if not parts:
+        logger.warning(f"[web_search_baidu]未检索到与{query}相关的结果")
+        return ""
+
+    return "\n\n".join(parts)
+
+
 if __name__ == '__main__':
-    print(fetch_external_data("1001","2025-01"))
+    print(web_search_baidu("哈基米是什么梗"))

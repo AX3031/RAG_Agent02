@@ -52,3 +52,31 @@ def report_prompt_switch(request: ModelRequest):            # 动态切换提示
         return load_report_prompts()
 
     return load_system_prompts()
+
+
+from langchain.agents.middleware import PIIMiddleware, ModelFallbackMiddleware
+
+# 敏感信息脱敏：邮箱在输出侧 redact，手机号在输入侧 mask
+pii_middleware_email = PIIMiddleware(
+    "email",
+    strategy="redact",
+    apply_to_input=False,
+    apply_to_output=True,
+)
+
+pii_middleware_phone = PIIMiddleware(
+    "phone_number",
+    # 使用自定义正则表达式，覆盖常见的手机号/座机写法
+    detector=r"(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{2,4}\)?[\s.-]?)?\d{3,4}[\s.-]?\d{4}",
+    strategy="mask",
+    apply_to_input=True,
+)
+
+# 主模型调用失败时自动切换到备用模型
+from model.factory import chat_model, ChatModelFactory
+from utils.config_handler import rag_conf
+
+model_fallback_middleware = ModelFallbackMiddleware(
+    chat_model,
+    ChatModelFactory().generator(model_name=rag_conf["backup_chat_model_name"]),
+)

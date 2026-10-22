@@ -1,4 +1,5 @@
 import time
+import uuid
 
 import streamlit as st
 from agent.react_agent import ReactAgent
@@ -9,6 +10,9 @@ st.divider()
 
 if "agent" not in st.session_state:
     st.session_state["agent"] = ReactAgent()
+
+if "thread_id" not in st.session_state:
+    st.session_state["thread_id"] = str(uuid.uuid4())
 
 if "message" not in st.session_state:
     st.session_state["message"] = [{"role":"assistant","content":"你好，有什么可以帮助你？"}]
@@ -25,7 +29,9 @@ if prompt:
 
     response_messages = []
     with st.spinner("智能客服思考中..."):
-        res_stream = st.session_state["agent"].execute_stream(prompt)
+        res_stream = st.session_state["agent"].execute_stream(
+            prompt, thread_id=st.session_state["thread_id"]
+        )
 
         def capture(generator, cache_list):
 

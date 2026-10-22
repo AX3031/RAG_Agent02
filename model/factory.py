@@ -26,8 +26,8 @@ class BaseModelFactory(ABC):
 
 
 class ChatModelFactory(BaseModelFactory):
-    def generator(self) -> Optional[Embeddings | BaseChatModel]:
-        model_name = rag_conf["chat_model_name"]
+    def generator(self, model_name: Optional[str] = None) -> Optional[Embeddings | BaseChatModel]:
+        model_name = model_name or rag_conf["chat_model_name"]
         openai_api_key = os.getenv("OPEN_API_KEY")
         openai_api_base = os.getenv("BASE_URL_DASHSCOPE")
         return ChatOpenAI(model_name=model_name, openai_api_key=openai_api_key, openai_api_base=openai_api_base)
@@ -42,3 +42,4 @@ embed_model = EmbeddingsFactory().generator()
 
 if __name__ == '__main__':
     print(rag_conf["chat_model_name"])
+    print(rag_conf["backup_chat_model_name"])

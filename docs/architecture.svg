@@ -50,13 +50,15 @@
     <rect x="864" y="264" width="240" height="44" rx="8" fill="#faf5ff" stroke="#d8b4fe"/>
     <text x="874" y="283" font-size="12" font-weight="600" fill="#0f172a">report_prompt_switch</text>
     <text x="874" y="299" font-size="10.5" fill="#64748b">按 context 切换系统提示词</text>
+    <text x="436" y="318" font-size="10.5" fill="#5b21b6">+ PIIMiddleware（邮箱 redact / 手机号 mask） · ModelFallbackMiddleware（主模型失败切备用）</text>
 
     <path d="M310 178 V240" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
     <path d="M394 278 H420" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
 
     <!-- Tool layer -->
     <rect x="40" y="352" width="1120" height="194" rx="14" fill="#ecfdf5" stroke="#a7f3d0"/>
-    <text x="56" y="374" font-size="12" font-weight="600" fill="#047857" letter-spacing="1.2">工具层 · TOOLS（@tool 注册，模型按需调用）</text>
+    <text x="56" y="374" font-size="12" font-weight="600" fill="#047857" letter-spacing="1.2">工具层 · TOOLS（8 个 @tool 注册，模型按需调用）</text>
+    <text x="64" y="530" font-size="10.5" fill="#047857">另有 web_search_baidu：百度联网搜索，解析 web / image / video 结果</text>
 
     <rect x="64" y="388" width="250" height="48" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
     <text x="76" y="408" font-size="13.5" font-weight="600" fill="#0f172a">rag_summarize</text>
@@ -127,7 +129,7 @@
     <path d="M800 682 V746" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
 
     <text x="64" y="852" font-size="10.5" fill="#64748b">向量库示例数据：3 个 chunk；切分 chunk_size=200 / overlap=20；日志：logs/agent_YYYYMMDD.log（控制台 INFO / 文件 DEBUG）</text>
-    <text x="64" y="870" font-size="10.5" fill="#64748b">当前没有 Checkpointer 与会话记忆接线：每次 execute_stream 都是独立请求。</text>
+    <text x="64" y="870" font-size="10.5" fill="#64748b">默认未启用 Checkpointer；设置 USE_POSTGRES_CHECKPOINTER=true 后接入 PostgreSQL 会话持久化。</text>
 
     <!-- Prompt switch (dashed) -->
     <path d="M1116 620 H1148 V288 H1104" fill="none" stroke="#db2777" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#arrowDash)"/>
