@@ -130,13 +130,17 @@
 | 社区集成 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader | `model/factory.py`、`utils/file_handler.py` |
 | 向量库 | langchain-chroma / chromadb | 1.1.0 / 1.5.9 | 本地持久化向量检索 | `rag/vector_store.py` |
 | 文本切分 | langchain-text-splitters | 1.1.2 | `RecursiveCharacterTextSplitter`（子块切分） | `rag/chunking.py` |
-| 模型 SDK | dashscope | 1.27.5 | 通义千问/Embedding 服务 | 由 `DashScopeEmbeddings` 使用 |
+| 模型 SDK | dashscope | 1.27.5 | 通义千问 / Embedding / gte-rerank | `DashScopeEmbeddings`、`rag/retrieval_service.py`、`rag/answerability.py` |
+| 稀疏检索 | 自研 BM25 | — | 中文 unigram + bigram，无新增依赖 | `rag/sparse_index.py` |
+| 离线评测 | 标准库 stdlib | — | Recall/HitRate/MRR/NDCG、随机基线 | `eval/retrieval_metrics.py`、`eval/run_eval.py` |
 | OpenAI SDK | openai | 3.19.2 | `ChatOpenAI` 的 HTTP 客户端（传递依赖） | `langchain-openai` |
 | 文档解析 | pypdf | 6.18.1 | PDF 文本提取 | `utils/file_handler.py` |
 | 配置 | PyYAML | 6.0.3 | 读取 `config/*.yml` | `utils/config_handler.py` |
 | 环境变量 | python-dotenv | 1.2.3 | 加载 `.env` | `model/factory.py` |
 | HTTP 客户端 | requests | 2.34.2 | 百度联网搜索 | `agent/tools/agent_tools.py` |
 | 追踪 | langsmith | 0.12.2 | 传递依赖；当前未显式启用 | — |
+
+模型：`qwen3.5-flash`（对话）、`text-embedding-v4`（向量化）、`glm-5`（备用对话）、`qwen-flash`（Answerability 判定）、`gte-rerank-v2`（精排）。
 
 ### 3.1 框架关系
 
@@ -1025,13 +1029,13 @@ uv run -m agent.react_agent
 
 1. 把 `.txt`/`.pdf` 放到 `data/`（第一层）。
 2. 确认 `config/chroma.yml` 的 `allow_knowledge_file_type` 包含后缀。
-3. 运行 `uv run -m rag.vector_store`。
-4. 重启应用（`RagSummarizeService` 在 import 时初始化）。
+3. 运行 `uv run -m rag.vector_store`（增量入库；同版本跳过，新文件入库，磁盘删除会 prune）。
+4. 不需要重启应用：下一次查询会按新的块数重建 BM25 缓存。
 
 **新增文件类型**：
 
 1. 在 `utils/file_handler.py` 增加 loader。
-2. 在 `rag/vector_store.py` 的 `get_file_documents` 增加分支。
+2. 在 `rag/vector_store.py` 的 `_load_file` 增加分支。
 3. 更新 `allow_knowledge_file_type`。
 4. 补测试：空文件、损坏文件、编码异常。
 
@@ -1041,16 +1045,15 @@ uv run -m agent.react_agent
 
 **元数据过滤**：
 
-入库时给 `Document` 增加 `metadata`（如 `source`、`department`、`version`），检索时用 `search_kwargs={"filter": {...}}`。当前代码没有使用 metadata filter。
+入库时由 `rag/chunking.py` 写入 `doc_id/version/source/page/title_path/scope_tags`；检索时 `RetrievalService.retrieve(scope={...})` 会把条件传给 Chroma `where` 与 BM25 `allowed_ids`，**在召回前过滤**。
 
 **增量更新/删除**：
 
-建议方案：
+已实现：
 
-- 为每个 chunk 生成稳定 ID（文件路径 + chunk 序号 + 内容哈希）。
-- 入库前按 `source` 删除旧 chunk，再写入新 chunk。
-- `md5.text` 改为 JSON/CSV 清单：`{path, md5, chunk_ids, updated_at}`。
-- 或者直接重建集合，简单可靠。
+- 每个 chunk 有稳定 ID（`doc_id + version + seq`）。
+- `IndexManifest` 记录文件→版本→chunk_id；内容变化时先写新版本，再删旧块。
+- `--delete-doc <doc_id>` 级联删除；`--rebuild` 全量重建；`prune` 清理磁盘上已删除的文件。
 
 ### 13.3 接入文件上传
 
@@ -1161,9 +1164,9 @@ if request.tool_call["name"] == "enter_diagnosis_mode":
 **Embedding 模型**：
 
 1. 修改 `config/rag.yml` 的 `embedding_model_name`。
-2. 如果维度变化，删除并重建 `chroma_db/` 与 `md5.text`。
-3. 重新入库。
-4. 验证检索结果。
+2. `index_version` 会自动变化；执行 `uv run -m rag.vector_store --rebuild`。
+3. 如果维度变化，先删除 `chroma_db/` 与 `storage/` 再重建。
+4. 用 `uv run -m eval.run_eval --top-k 10` 验证检索结果，更新 `baseline.json`。
 
 **OpenAI 兼容供应商**：
 
