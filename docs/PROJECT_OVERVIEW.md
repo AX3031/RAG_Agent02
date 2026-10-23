@@ -18,7 +18,7 @@
 | --- | --- | --- |
 | langchain / langgraph | 1.4.0 / 1.2.11 | Agent 编排与图执行 |
 | langgraph-checkpoint-postgres / psycopg | 3.2.0 / 3.3.6 | PostgreSQL 会话持久化（可选） |
-| langchain-openai | 1.6.6 | `ChatOpenAI` 调用 DashScope 兼容端点 |
+| langchain-openai | 1.6.6 | `init_chat_model` 构造的 `ChatOpenAI` 调用 DashScope 兼容端点 |
 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader |
 | langchain-chroma / chromadb | 1.1.0 / 1.5.9 | 本地向量库 |
 | dashscope | 1.27.5 | 通义千问 / Embedding SDK |

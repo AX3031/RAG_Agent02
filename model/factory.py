@@ -1,12 +1,9 @@
 from abc import ABC, abstractmethod
 from typing import Optional
+from langchain.chat_models import init_chat_model
 from langchain_core.embeddings import Embeddings
-from langchain_community.chat_models.tongyi import BaseChatModel
+from langchain_core.language_models.chat_models import BaseChatModel
 from langchain_community.embeddings import DashScopeEmbeddings
-from langchain_community.chat_models.tongyi import ChatTongyi
-from langchain_community.chat_models.openai import ChatOpenAI
-from langchain_openai import ChatOpenAI
-
 
 import os
 from utils.config_handler import rag_conf
@@ -20,9 +17,10 @@ class BaseModelFactory(ABC):
         pass
 
 
+# 通义原生协议备选写法（需另外安装 langchain-tongyi，当前未接入依赖）：
 # class ChatModelFactory(BaseModelFactory):
 #     def generator(self) -> Optional[Embeddings | BaseChatModel]:
-#         return ChatTongyi(model=rag_conf["chat_model_name"])
+#         return init_chat_model(model=rag_conf["chat_model_name"], model_provider="tongyi")
 
 
 class ChatModelFactory(BaseModelFactory):
@@ -30,7 +28,13 @@ class ChatModelFactory(BaseModelFactory):
         model_name = model_name or rag_conf["chat_model_name"]
         openai_api_key = os.getenv("OPEN_API_KEY")
         openai_api_base = os.getenv("BASE_URL_DASHSCOPE")
-        return ChatOpenAI(model_name=model_name, openai_api_key=openai_api_key, openai_api_base=openai_api_base)
+        # LangChain 1.x 统一入口：内部仍是官方维护的 langchain_openai.ChatOpenAI
+        return init_chat_model(
+            model=model_name,
+            model_provider="openai",
+            api_key=openai_api_key,
+            base_url=openai_api_base,
+        )
 
 
 class EmbeddingsFactory(BaseModelFactory):

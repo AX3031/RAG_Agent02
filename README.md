@@ -87,7 +87,7 @@
 | Agent 框架 | langchain | 1.4.0 | `create_agent`、中间件、工具装饰器 |
 | 图执行 | langgraph | 1.2.11 | Agent 的 StateGraph 运行时、`stream` |
 | 状态持久化 | langgraph-checkpoint-postgres / psycopg | 3.2.0 / 3.3.6 | PostgreSQL checkpointer 与连接池 |
-| 模型接入 | langchain-openai | 1.6.6 | `ChatOpenAI` 调用 DashScope OpenAI 兼容端点 |
+| 模型接入 | langchain / langchain-openai | 1.4.0 / 1.6.6 | `init_chat_model` 构造官方 `ChatOpenAI`，调用 DashScope OpenAI 兼容端点 |
 | 社区集成 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader |
 | 向量库 | langchain-chroma / chromadb | 1.1.0 / 1.5.9 | 本地持久化向量检索 |
 | 文本切分 | langchain-text-splitters | 1.1.2 | `RecursiveCharacterTextSplitter` |
@@ -127,8 +127,8 @@ uv sync
 
 | 变量名 | 使用方 | 是否必需 |
 | --- | --- | --- |
-| `OPEN_API_KEY` | `model/factory.py` 中 `ChatOpenAI` | 是（注意变量名不是 `OPENAI_API_KEY`） |
-| `BASE_URL_DASHSCOPE` | `ChatOpenAI` 的 OpenAI 兼容端点 | 是 |
+| `OPEN_API_KEY` | `model/factory.py` 中 `init_chat_model(api_key=...)` | 是（注意变量名不是 `OPENAI_API_KEY`） |
+| `BASE_URL_DASHSCOPE` | `init_chat_model(base_url=...)` 的 OpenAI 兼容端点 | 是 |
 | `DASHSCOPE_API_KEY` | `DashScopeEmbeddings` 隐式读取 | 是 |
 | `DB_URL_POSTGRES` | `memorys/postgres_checkpointer.py` | 否；启用 `USE_POSTGRES_CHECKPOINTER=true` 时必需 |
 | `USE_POSTGRES_CHECKPOINTER` | `agent/react_agent.py` | 否；设为 `true` 开启 PostgreSQL 会话持久化 |

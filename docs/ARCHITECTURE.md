@@ -126,7 +126,7 @@
 | 图运行时 | langgraph | 1.2.11 | StateGraph、`stream`、运行时 context | 由 `create_agent` 内部使用 |
 | 状态持久化 | langgraph-checkpoint-postgres / psycopg / psycopg-pool | 3.2.0 / 3.3.6 / 3.3.3 | PostgreSQL checkpointer 与连接池 | `memorys/postgres_checkpointer.py` |
 | 核心抽象 | langchain-core | 1.6.5 | Message、Tool、Runnable、Prompt | 全项目 |
-| 模型接入 | langchain-openai | 1.6.6 | `ChatOpenAI` 调用 OpenAI 兼容端点 | `model/factory.py` |
+| 模型接入 | langchain / langchain-openai | 1.4.0 / 1.6.6 | `init_chat_model(model_provider="openai")` 实例化官方 `ChatOpenAI`，调用 OpenAI 兼容端点 | `model/factory.py` |
 | 社区集成 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader | `model/factory.py`、`utils/file_handler.py` |
 | 向量库 | langchain-chroma / chromadb | 1.1.0 / 1.5.9 | 本地持久化向量检索 | `rag/vector_store.py` |
 | 文本切分 | langchain-text-splitters | 1.1.2 | `RecursiveCharacterTextSplitter` | `rag/vector_store.py` |
@@ -144,7 +144,7 @@
 flowchart LR
     LC["langchain 1.4<br/>create_agent / middleware"] --> LG["langgraph 1.2<br/>StateGraph / stream"]
     LC --> LCO["langchain-core<br/>Message / Tool / Runnable"]
-    LCO --> LO["langchain-openai<br/>ChatOpenAI"]
+    LC -->|"init_chat_model"| LO["langchain-openai<br/>ChatOpenAI"]
     LCO --> LCH["langchain-chroma<br/>Chroma"]
     LCH --> CD["chromadb"]
     LO --> DS["DashScope<br/>OpenAI 兼容端点"]
@@ -156,6 +156,7 @@ flowchart LR
 
 - `create_agent` 返回的是 LangGraph 的 `CompiledStateGraph`，不是旧版 `AgentExecutor`。
 - 中间件是 LangChain 1.x Agent 的扩展机制，本项目用了 `wrap_tool_call`、`before_model`、`dynamic_prompt`，并接入内置的 `PIIMiddleware` 与 `ModelFallbackMiddleware`。
+- 对话模型统一由 `langchain.chat_models.init_chat_model(model_provider="openai")` 在 `model/factory.py` 构造，实际对象仍是官方维护的 `langchain_openai.ChatOpenAI`；`langchain_community` 里的同名副本已不再 import。
 - RAG 不依赖 Agent 框架，是一条独立 LCEL 链（`PromptTemplate | ChatModel | StrOutputParser`），再作为一个工具暴露给 Agent。
 - `langchain-community` 已进入 sunset（安装/导入时会出现 DeprecationWarning），当前 `DashScopeEmbeddings` 仍来自该包；长期应迁移到独立集成包，或直接用 `dashscope` SDK 封装一个 `Embeddings` 实现。
 
@@ -671,8 +672,8 @@ import agent.tools.middleware
 
 | 变量名 | 读取方 | 必需 | 说明 |
 | --- | --- | --- | --- |
-| `OPEN_API_KEY` | `model/factory.py` → `ChatOpenAI(openai_api_key=...)` | 是 | 注意不是 `OPENAI_API_KEY`；命名遗留 |
-| `BASE_URL_DASHSCOPE` | `model/factory.py` → `ChatOpenAI(openai_api_base=...)` | 是 | DashScope OpenAI 兼容端点 |
+| `OPEN_API_KEY` | `model/factory.py` → `init_chat_model(api_key=...)` | 是 | 注意不是 `OPENAI_API_KEY`；命名遗留 |
+| `BASE_URL_DASHSCOPE` | `model/factory.py` → `init_chat_model(base_url=...)` | 是 | DashScope OpenAI 兼容端点 |
 | `DASHSCOPE_API_KEY` | `DashScopeEmbeddings` 内部读取 | 是 | 未显式传入时由 SDK 读取 |
 | `DB_URL_POSTGRES` | `memorys/postgres_checkpointer.py` | 否 | PostgreSQL 连接串；启用 `USE_POSTGRES_CHECKPOINTER` 时必需 |
 | `API_HOST_DASHSCOPE` | 未使用 | 否 | 预留 |
@@ -863,7 +864,7 @@ uv run -m rag.vector_store
 | TD-07 | P1 | MD5 去重只增不删 | `save_md5_hex` 只 append；无删除逻辑 | 文件更新后旧 chunk 残留、检索到过期内容 | 记录文件路径 + chunk ID；更新前按 metadata 删除 |
 | TD-08 | P1 | 无鉴权/限流/租户隔离 | 全项目无登录/权限代码 | 不能直接对外提供服务 | 接入 SSO/API Key、限流、按用户隔离集合 |
 | TD-09 | P2 | 导入期副作用重 | `agent_tools.py` 模块级 `rag = ...`；`factory.py` 模块级实例 | 启动慢、测试难、配置错误提前暴露 | 惰性初始化/依赖注入/`lru_cache` 工厂 |
-| TD-10 | P2 | `model/factory.py` 重复 import 与遗留代码 | 两次 import `ChatOpenAI`；`ChatTongyi` 未使用；`BaseChatModel` 来源不规范 | 可读性差，易误用 | 清理为 `from langchain_openai import ChatOpenAI`；删注释代码 |
+| TD-10 | ✅ 已修复 | `model/factory.py` 重复 import 与遗留代码 | 已删除 `langchain_community` 的 `ChatOpenAI`/`ChatTongyi` 遗留 import，`BaseChatModel` 改从 `langchain_core.language_models.chat_models` 导入，对话模型统一走 `init_chat_model` | 可读性差，易误用 | 后续若接入非 OpenAI 协议供应商，再扩展 `model_provider` |
 | TD-11 | P2 | `OPEN_API_KEY` 命名易错 | `os.getenv("OPEN_API_KEY")` | 新成员常写成 `OPENAI_API_KEY` 导致认证失败 | 改名 `OPENAI_API_KEY`，或同时兼容两者 |
 | TD-12 | P2 | `monitor_tool` 成功日志早于执行 | 先打印成功，再 `handler(request)` | 排障误判 | 把“成功”日志移到 `handler` 之后 |
 | TD-13 | P2 | `pyproject.toml` 依赖可疑/缺失 | 仍声明 `callable`、`command`、`datetime`、`logger`；直接 import 的 `langchain-text-splitters` 未显式声明（`langgraph` 现由 `langchain`/`langgraph-checkpoint-postgres` 传递提供） | 环境可复现性差；误装包 | 清理无用依赖；把直接使用包写入 `dependencies` |
@@ -1086,12 +1087,15 @@ if request.tool_call["name"] == "enter_diagnosis_mode":
 **OpenAI 兼容供应商**：
 
 ```python
-ChatOpenAI(
+init_chat_model(
     model=model_name,
-    openai_api_key=os.getenv("OPEN_API_KEY"),
-    openai_api_base=os.getenv("BASE_URL_DASHSCOPE"),
+    model_provider="openai",
+    api_key=os.getenv("OPEN_API_KEY"),
+    base_url=os.getenv("BASE_URL_DASHSCOPE"),
 )
 ```
+
+`init_chat_model` 是 LangChain 1.x 的统一入口，上面这组参数会构造官方维护的 `langchain_openai.ChatOpenAI`（`api_key`/`base_url`/`model` 分别是 `openai_api_key`/`openai_api_base`/`model_name` 的别名）。
 
 只要供应商兼容 `/v1/chat/completions` 与工具调用协议，通常只需换 Base URL/Key/模型名。Embedding 则要注意 DashScope 的 `DashScopeEmbeddings` 与其他供应商不通用，需要换实现。
 
