@@ -34,10 +34,12 @@ def get_checkpointer() -> PostgresSaver:
 
     # PostgresSaver 必须使用 autocommit 连接；
     # prepare_threshold=0 关闭预编译语句缓存，避免连接池复用连接时报 DuplicatePreparedStatement
+    # timeout 控制取连接的等待上限：数据库未启动时尽快失败，由 UI 回退到短期记忆
     _pool = ConnectionPool(
         conninfo=DB_URL_POSTGRES,
         min_size=1,
         max_size=10,
+        timeout=5,
         kwargs={"autocommit": True, "prepare_threshold": 0},
     )
     # 进程退出前先关闭连接池，否则 Python 3.14 解释器关闭阶段会因 join 线程报错

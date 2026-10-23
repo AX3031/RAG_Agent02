@@ -10,14 +10,14 @@
 
 ## 1. 一句话
 
-基于 **LangChain 1.4 `create_agent`（LangGraph）** 的机器人智能客服原型：Streamlit UI + 工具调用 + Chroma RAG + DashScope 模型，支持报告场景动态提示词、PII 脱敏、模型降级与可选 PostgreSQL 会话持久化。
+基于 **LangChain 1.4 `create_agent`（LangGraph）** 的机器人智能客服原型：Streamlit UI + 工具调用 + Chroma RAG + DashScope 模型，支持报告场景动态提示词、PII 脱敏、模型降级，以及短期/本地 JSON/PostgreSQL 三种会话记忆。
 
 ## 2. 技术栈
 
 | 组件 | 版本 | 作用 |
 | --- | --- | --- |
 | langchain / langgraph | 1.4.0 / 1.2.11 | Agent 编排与图执行 |
-| langgraph-checkpoint-postgres / psycopg | 3.2.0 / 3.3.6 | PostgreSQL 会话持久化（可选） |
+| langgraph-checkpoint-postgres / psycopg | 3.2.0 / 3.3.6 | 会话记忆：内存（默认）/ 本地 JSON / PostgreSQL |
 | langchain-openai | 1.6.6 | `init_chat_model` 构造的 `ChatOpenAI` 调用 DashScope 兼容端点 |
 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader |
 | langchain-chroma / chromadb | 1.1.0 / 1.5.9 | 本地向量库 |
@@ -34,7 +34,7 @@
 | 编排层 | `ReactAgent` + 6 个中间件 | 组装模型/工具/提示词，驱动 ReAct 循环 |
 | 工具层 | 8 个 `@tool` | RAG、天气、位置、用户、月份、外部 CSV、场景开关、百度联网搜索 |
 | 服务层 | `RagSummarizeService`、`VectorStoreService` | 检索总结、Chroma 入库与检索 |
-| 模型/存储 | `ChatOpenAI`、`DashScopeEmbeddings`、Chroma、PostgreSQL（可选） | 推理、向量化、持久化 |
+| 模型/存储 | `ChatOpenAI`、`DashScopeEmbeddings`、Chroma、记忆后端 | 推理、向量化、上下文持久化 |
 | 横切 | `config/`、`prompts/`、`utils/`、`logs/` | 配置、提示词、路径、日志、环境补丁 |
 
 ## 4. 一次请求怎么走
@@ -65,15 +65,15 @@ config/       rag / chroma / agent / prompts
 prompts/      main / rag_summarize / report
 data/         知识文件 + external/records.csv
 chroma_db/    向量库（示例 3 个 chunk）
-memorys/      会话记忆示例 + PostgreSQL checkpointer（可选）
+memorys/      记忆方式工厂 + 短期/JSON/PostgreSQL checkpointer
 docs/         架构文档与 SVG
 env_patch/    .pth + sitecustomize.py
 ```
 
 ## 7. 关键约束
 
-- **默认无跨轮记忆**：默认不启用 `checkpointer`；设置 `USE_POSTGRES_CHECKPOINTER=true` 后会启用 PostgreSQL 会话持久化。
-- **消息块级流式**：`stream_mode="values"` 会把用户问题、工具结果也当作回答输出；UI 只保存最后一个 chunk。
+- **默认短期记忆**：输入框左侧的记忆按钮可选短期（内存，默认）/ 本地 JSON / PostgreSQL；侧边栏管理会话 ID；短期记忆重启即丢失。
+- **消息块级流式**：`stream_mode="values"` 只过滤输出 `AIMessage` 文本，工具中间消息不再显示；UI 只保存最后一个 chunk。
 - **提示词已补全**：三套提示词已补全角色、工具规则、输出结构与边界，仍需按业务持续迭代。
 - **外部 CSV 为空**：`data/external/records.csv` 当前 0 字节；`fetch_external_data` 注解为 `str`、实际返回 `dict`。
 - **知识库只增不删**：文件内容变化会新增 chunk，旧向量保留。
@@ -93,11 +93,13 @@ env_patch/    .pth + sitecustomize.py
 | 有什么坑/技术债？ | [ARCHITECTURE 第 12 节](ARCHITECTURE.md#12-已知问题与技术债) |
 | 启动失败/日志在哪？ | [ARCHITECTURE 第 11 节](ARCHITECTURE.md#11-可观测性与错误处理) + [16.2 常用命令](ARCHITECTURE.md#162-常用命令) |
 | 代码文件对应关系？ | [ARCHITECTURE 16.1](ARCHITECTURE.md#161-关键文件索引) |
+| 最近改了什么、为什么改？ | [CHANGELOG](../CHANGELOG.md) |
 
 ## 9. 给 AI 的阅读约定
 
-完整约定见 [AGENTS.md](../AGENTS.md)。核心三点：
+完整约定见 [AGENTS.md](../AGENTS.md)。核心四点：
 
 - 先读本文件，再按第 8 节索引只读 `ARCHITECTURE.md` 对应章节，不要整份加载。
 - 不要为了建立认知去整份读 `docs/*.svg`；图是给人看的，文字模块表更适合 AI（改图时只 grep `<text>` 节点定位）。
 - 代码是最终事实源；文档与代码冲突时，以代码为准并更新文档。
+- 增量变更写 [CHANGELOG.md](../CHANGELOG.md)，不要塞进架构正文。

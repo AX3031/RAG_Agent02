@@ -124,7 +124,7 @@
 | Web UI | streamlit | 1.64.0 | 对话界面、流式渲染、会话状态 | `app.py` |
 | Agent 框架 | langchain | 1.4.0 | `create_agent`、中间件、`@tool` | `agent/react_agent.py` |
 | 图运行时 | langgraph | 1.2.11 | StateGraph、`stream`、运行时 context | 由 `create_agent` 内部使用 |
-| 状态持久化 | langgraph-checkpoint-postgres / psycopg / psycopg-pool | 3.2.0 / 3.3.6 / 3.3.3 | PostgreSQL checkpointer 与连接池 | `memorys/postgres_checkpointer.py` |
+| 状态持久化 | langgraph checkpointer / langgraph-checkpoint-postgres / psycopg / psycopg-pool | 1.2.11 / 3.2.0 / 3.3.6 / 3.3.3 | 短期内存、本地 JSON、PostgreSQL 三种 checkpointer | `memorys/memory_factory.py`、`file_checkpointer.py`、`postgres_checkpointer.py` |
 | 核心抽象 | langchain-core | 1.6.5 | Message、Tool、Runnable、Prompt | 全项目 |
 | 模型接入 | langchain / langchain-openai | 1.4.0 / 1.6.6 | `init_chat_model(model_provider="openai")` 实例化官方 `ChatOpenAI`，调用 OpenAI 兼容端点 | `model/factory.py` |
 | 社区集成 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader | `model/factory.py`、`utils/file_handler.py` |
@@ -194,8 +194,8 @@ flowchart LR
 | --- | --- | --- |
 | 主链路 | `app.py` → `agent/react_agent.py` → `agent/tools/*` → `rag/*` → `model/factory.py` | 一次对话实际执行的路径 |
 | 主链路依赖 | `utils/*`、`config/*`、`prompts/*`、`data/*`、`chroma_db/*` | 被主链路读取/写入 |
-| 实验/预留 | `memorys/persistent_memory.py`、`memorys/temporary_memory.py`、`app_file_uploader.py` | 有实现或骨架，但主链路未 import |
-| 可选链路 | `memorys/postgres_checkpointer.py` | `USE_POSTGRES_CHECKPOINTER=true` 时由 `ReactAgent` 延迟加载，用于会话状态持久化 |
+| 实验/预留 | `memorys/persistent_memory.py`、`memorys/temporary_memory.py`、`app_file_uploader.py` | 会话历史示例 / 空壳；主链路未直接 import |
+| 记忆链路 | `memorys/memory_factory.py`、`file_checkpointer.py`、`postgres_checkpointer.py` | 由 `app.py` 选择的记忆方式驱动 `ReactAgent` 创建对应 checkpointer |
 | 模板/临时 | `main.py`、`test1.py` | 无业务逻辑，可删除或替换 |
 
 ---
@@ -208,6 +208,7 @@ flowchart LR
 project2/
 ├── README.md                    # ✅ 项目入口、导读与命令
 ├── AGENTS.md                    # ⚙️ AI 阅读约定
+├── CHANGELOG.md                 # ✅ 重要变更日志（Keep a Changelog）
 ├── app.py                       # ✅ Streamlit 对话入口
 ├── app_file_uploader.py         # 🧪 文件上传（空壳）
 ├── main.py                      # 🧪 PyCharm 默认模板
@@ -226,9 +227,11 @@ project2/
 ├── model/
 │   └── factory.py               # ✅ Chat/Embedding 工厂
 ├── memorys/
+│   ├── memory_factory.py        # ✅ 记忆方式工厂（短期/文件/PostgreSQL）
+│   ├── file_checkpointer.py     # ✅ JSON 文件型 checkpointer
 │   ├── postgres_checkpointer.py # 🧪 PostgreSQL checkpointer（可选）
-│   ├── persistent_memory.py     # 🧪 文件型会话历史
-│   └── temporary_memory.py      # 🧪 内存型会话历史
+│   ├── persistent_memory.py     # 🧪 文件型会话历史（示例）
+│   └── temporary_memory.py      # 🧪 内存型会话历史（示例）
 ├── utils/
 │   ├── config_handler.py        # ⚙️ YAML 加载
 │   ├── prompt_loader.py         # ⚙️ 提示词加载
@@ -249,8 +252,8 @@ project2/
 
 | 模块 | 关键符号 | 职责 | 上游/下游 |
 | --- | --- | --- | --- |
-| `app.py` | `st.session_state`、`execute_stream`、`capture`、`write_stream` | 页面渲染；首次创建 `ReactAgent`；收集流式输出；`st.rerun()` 刷新 | 上游：用户；下游：`ReactAgent` |
-| `agent/react_agent.py` | `ReactAgent.__init__`、`execute_stream`、`_build_checkpointer` | 用 `create_agent` 组装模型、8 个工具、6 个中间件；以 `stream_mode="values"` 输出；可选 checkpointer + `thread_id` | 上游：`app.py`；下游：模型、工具、中间件 |
+| `app.py` | `st.session_state`、`st.bottom`、`popover`、`radio`、`_reset_chat`、`_load_history`、`capture`、`write_stream` | 页面渲染；底部栏（`st.bottom` + 水平容器）内左侧记忆按钮、右侧 `chat_input`；弹层里选择记忆方式；侧边栏「会话管理」维护会话 ID/新建会话/清空记忆 | 上游：用户；下游：`ReactAgent`、`memory_factory` |
+| `agent/react_agent.py` | `ReactAgent.__init__`、`execute_stream`、`clear_memory`、`load_ui_messages` | 用 `create_agent` 组装模型、8 个工具、6 个中间件；按 `memory_mode` 创建 checkpointer；过滤 `AIMessage` 流式输出 | 上游：`app.py`；下游：模型、工具、中间件、记忆工厂 |
 | `agent/tools/agent_tools.py` | `rag_summarize`、`get_weather`、`get_user_location`、`get_user_id`、`get_current_month`、`fetch_external_data`、`fill_context_for_report`、`web_search_baidu` | 工具实现；模块级 `rag = RagSummarizeService()`；CSV 懒加载缓存；百度联网搜索 | 上游：模型 tool_call；下游：RAG、CSV、百度 AI Search |
 | `agent/tools/middleware.py` | `monitor_tool`、`log_before_model`、`report_prompt_switch`、`pii_middleware_email`、`pii_middleware_phone`、`model_fallback_middleware` | 工具日志/场景标记、模型前日志、动态提示词、PII 脱敏、模型降级 | 被 `create_agent` 调用 |
 | `rag/rag_service.py` | `RagSummarizeService`、`_init_chain`、`retriever_docs`、`rag_summarize` | 检索文档、拼装 context、调用 LCEL 链生成总结 | 上游：`rag_summarize` 工具；下游：Chroma、ChatModel |
@@ -261,9 +264,11 @@ project2/
 | `utils/path_tool.py` | `get_project_root`、`get_abs_path` | 基于 `utils/` 位置推导项目根 | 被所有路径读取使用 |
 | `utils/file_handler.py` | `get_file_md5_hex`、`listdir_with_allowed_type`、`pdf_loader`、`txt_loader` | MD5 计算、文件发现、文档加载 | 被 `VectorStoreService` 使用 |
 | `utils/logger_handler.py` | `get_logger`、`logger` | 控制台 INFO + 按日文件 DEBUG；幂等 Handler | 被工具/中间件/入库使用 |
+| `memorys/memory_factory.py` | `MEMORY_MODE_LABELS`、`DEFAULT_MEMORY_MODE`、`create_checkpointer` | 记忆方式枚举与 checkpointer 工厂；PostgreSQL 分支延迟导入 | 被 `agent/react_agent.py` 使用 |
+| `memorys/file_checkpointer.py` | `FileCheckpointSaver`、`get_file_checkpointer` | 继承 `InMemorySaver`，把 storage/writes/blobs 原子写入 JSON；进程内单例 | 被 `memory_factory.py` 使用 |
+| `memorys/postgres_checkpointer.py` | `get_checkpointer`、`close_pool` | PostgreSQL checkpointer（连接池 + 幂等建表）；选择 PostgreSQL 模式时使用 | 被 `memory_factory.py` 使用 |
 | `memorys/persistent_memory.py` | `FileChatMessageHistory`、`conversation_chain` | 文件型会话历史 + `RunnableWithMessageHistory` 示例 | 🧪 未接入主链路 |
 | `memorys/temporary_memory.py` | `store`、`conversation_chain` | 内存型会话历史示例 | 🧪 未接入主链路 |
-| `memorys/postgres_checkpointer.py` | `get_checkpointer`、`close_pool` | PostgreSQL checkpointer（连接池 + 幂等建表）；`USE_POSTGRES_CHECKPOINTER=true` 时由 `ReactAgent` 延迟加载 | 被 `agent/react_agent.py` 使用 |
 | `app_file_uploader.py` | 无 | 预留的文件上传页面 | 🧪 空壳 |
 
 ### 5.3 模块依赖关系
@@ -277,7 +282,10 @@ flowchart TB
     RA --> MW[agent/tools/middleware.py]
     MW --> MF
     MW --> CH
-    RA -.->|USE_POSTGRES_CHECKPOINTER=true| PG[(PostgreSQL)]
+    RA --> MEM[memorys/memory_factory.py]
+    MEM --> IM[(短期 InMemorySaver)]
+    MEM --> FJ[(本地 JSON 文件)]
+    MEM --> PG[(PostgreSQL)]
     AT --> RS[rag/rag_service.py]
     AT --> CH[utils/config_handler.py]
     AT --> LG[utils/logger_handler.py]
@@ -379,7 +387,7 @@ create_agent(
         model_fallback_middleware, pii_middleware_email, pii_middleware_phone,
         monitor_tool, log_before_model, report_prompt_switch,
     ],
-    checkpointer=_build_checkpointer(),  # 默认 None；USE_POSTGRES_CHECKPOINTER=true 时启用
+    checkpointer=self.checkpointer,  # 按 memory_mode 创建：短期/文件/PostgreSQL
 )
 ```
 
@@ -389,13 +397,13 @@ create_agent(
 
 ```python
 input_dict = {"messages": [{"role": "user", "content": query}]}
-config = {"configurable": {"thread_id": thread_id}} if thread_id else None
+config = {"configurable": {"thread_id": thread_id}}
 agent.stream(input_dict, stream_mode="values", context={"report": False}, config=config)
 ```
 
 注意：
 
-- 只发送当前问题；未启用 checkpointer 时无跨轮记忆，启用后由 `thread_id` 恢复历史。
+- 只发送当前问题；checkpointer 始终存在，同一 `thread_id` 会由 LangGraph 自动恢复历史。
 - `context` 是每次请求新建的字典 → 报告标记不会泄漏到下一次请求。
 - `stream_mode="values"` 表示“每一步后输出完整状态”，不是 token 流。
 
@@ -413,33 +421,30 @@ LangGraph 内部循环：
 
 **步骤 5：流式输出**
 
-`execute_stream` 对每个状态快照取 `chunk["messages"][-1]`，只要有 `content` 就 `yield`：
+`execute_stream` 对每个状态快照取 `chunk["messages"][-1]`，只输出不带 `tool_calls` 的 `AIMessage` 文本：
 
 ```python
 for chunk in self.agent.stream(...):
     lastest_message = chunk["messages"][-1]
-    if lastest_message.content:
-        yield lastest_message.content.strip() + "\n"
+    if isinstance(lastest_message, AIMessage) and not lastest_message.tool_calls:
+        if isinstance(lastest_message.content, str) and lastest_message.content.strip():
+            yield lastest_message.content.strip() + "\n"
 ```
 
-**重要行为**（按 LangGraph `values` 语义，并用本地假模型验证）：
+**重要行为**：
 
 | 快照 | 最后一条消息 | 是否会被 `yield` | 页面表现 |
 | --- | --- | --- | --- |
-| 第 1 个 | `HumanMessage`（用户问题） | 是 | 用户问题被当作“助手输出”再次显示 |
-| 中间 | `AIMessage(tool_calls)` | 通常 `content` 为空，不输出；若非空则输出 | 可能显示模型“思考”文本 |
-| 中间 | `ToolMessage`（工具结果） | 是 | 工具结果（天气、RAG 片段等）直接显示 |
+| 第 1 个 | `HumanMessage`（用户问题） | 否 | 不会重复显示问题 |
+| 中间 | `AIMessage(tool_calls)` | 否 | 不显示工具调用中间态 |
+| 中间 | `ToolMessage`（工具结果） | 否 | 不显示工具原始结果 |
 | 最后 | `AIMessage`（最终答案） | 是 | 正常回答 |
 
-`app.py` 的 `capture` 会缓存所有 chunk，但只把 `response_messages[-1]` 存入 UI 历史。因此：
-
-- 首次渲染会看到用户问题、工具结果、最终答案混在一起；
-- `st.rerun()` 后只保留最后一条最终答案；
-- 如果流为空，`response_messages[-1]` 会抛 `IndexError`。
+`app.py` 的 `capture` 会缓存所有 chunk，但只把 `response_messages[-1]` 存入 UI 历史；空流时不会写入助手消息。
 
 **步骤 6：页面刷新**
 
-`write_stream` 完成后 `st.rerun()`，重新渲染历史消息。Agent 仍在 `session_state` 中，不会重建。
+`write_stream` 完成后 `st.rerun()`，重新渲染历史消息。Agent 仍在 `session_state` 中，不会重建；只有切换记忆方式时才会销毁并重建。
 
 ### 6.3 当前消息状态示例
 
@@ -452,12 +457,21 @@ ToolMessage("城市深圳天气为晴天...")
 AIMessage("深圳今天晴天，26℃...")
 ```
 
-### 6.4 多轮记忆（默认关闭）
+### 6.4 多轮记忆（三种后端）
 
-- 默认 `checkpointer=None`，`create_agent` 不持久化状态。
-- `execute_stream` 每次只传一条 `HumanMessage`；`thread_id` 由 `app.py` 的 session 生成。
-- 设置 `USE_POSTGRES_CHECKPOINTER=true` 后，`ReactAgent` 会通过 `memorys/postgres_checkpointer.py` 建立 PostgreSQL checkpointer，同一 `thread_id` 的会话状态可跨请求保留。
-- 未开启时，“刚才提到的用户 ID”“上一轮报告结论”这类上下文不会自动保留。
+记忆方式由 `ReactAgent(memory_mode=...)` 决定，Streamlit **输入框左侧的记忆按钮**默认是「短期记忆」，点击后弹出列表：
+
+| 方式 | checkpointer | 存储位置 | 生命周期 |
+| --- | --- | --- | --- |
+| `short_term`（默认） | `langgraph.checkpoint.memory.InMemorySaver` | 进程内存 | 重启即丢失 |
+| `file` | `memorys/file_checkpointer.py` 的 `FileCheckpointSaver` | `memorys/chat_history/agent_checkpoints.json` | 跨进程保留 |
+| `postgres` | `memorys/postgres_checkpointer.py` 的 `PostgresSaver` | PostgreSQL | 跨进程/多实例保留 |
+
+- `execute_stream` 每次只传当前 `HumanMessage`，历史由 checkpointer 依据 `thread_id` 自动恢复。
+- `app.py` 的会话 ID 默认 `user_001`，在侧边栏「会话管理」修改；相同 ID 在文件/PostgreSQL 模式会恢复上下文与 UI 聊天记录。
+- 侧边栏「清空记忆」调用 `checkpointer.delete_thread(thread_id)`；「新建会话」生成新的随机 ID。
+- 弹层底部的 caption 显示当前方式的存储位置与会话 ID；PostgreSQL 连不上时约 5 秒内回退为短期记忆，并在页面顶部提示。
+- 未显式传入 `memory_mode` 时，`USE_POSTGRES_CHECKPOINTER=true` 仍可把默认方式切到 PostgreSQL（兼容旧配置）。
 
 接入细节见 13.4。
 
@@ -635,7 +649,7 @@ import agent.tools.middleware
 | 键 | 当前值 | 作用 | 修改影响 |
 | --- | --- | --- | --- |
 | `chat_model_name` | `qwen3.5-flash` | 对话模型名 | 需模型支持工具调用；重启生效 |
-| `backup_chat_model_name` | `deepseek-v4-flash-0731` | 备用对话模型名 | 主模型调用失败时由 `ModelFallbackMiddleware` 自动切换 |
+| `backup_chat_model_name` | `glm-5` | 备用对话模型名 | 主模型调用失败时由 `ModelFallbackMiddleware` 自动切换 |
 | `embedding_model_name` | `text-embedding-v4` | 向量模型名 | 维度变化必须重建 Chroma |
 
 ### 9.3 `config/chroma.yml`
@@ -675,12 +689,12 @@ import agent.tools.middleware
 | `OPEN_API_KEY` | `model/factory.py` → `init_chat_model(api_key=...)` | 是 | 注意不是 `OPENAI_API_KEY`；命名遗留 |
 | `BASE_URL_DASHSCOPE` | `model/factory.py` → `init_chat_model(base_url=...)` | 是 | DashScope OpenAI 兼容端点 |
 | `DASHSCOPE_API_KEY` | `DashScopeEmbeddings` 内部读取 | 是 | 未显式传入时由 SDK 读取 |
-| `DB_URL_POSTGRES` | `memorys/postgres_checkpointer.py` | 否 | PostgreSQL 连接串；启用 `USE_POSTGRES_CHECKPOINTER` 时必需 |
+| `DB_URL_POSTGRES` | `memorys/postgres_checkpointer.py` | 否 | PostgreSQL 连接串；Streamlit 选择 PostgreSQL 记忆方式时必需 |
 | `API_HOST_DASHSCOPE` | 未使用 | 否 | 预留 |
 | `BASE_URL_DEEPSEEK` | 未使用 | 否 | 预留 DeepSeek 接入 |
 | `API_KEY_DEEPSEEK` | 未使用 | 否 | 预留 |
 | `API_KEY_BAIDU` | `agent/tools/agent_tools.py` → `web_search_baidu` | 否 | 百度 AI Search 密钥；不配置时工具返回空字符串 |
-| `USE_POSTGRES_CHECKPOINTER` | `agent/react_agent.py` | 否 | 设为 `true` 时启用 PostgreSQL checkpointer；默认关闭 |
+| `USE_POSTGRES_CHECKPOINTER` | `agent/react_agent.py` | 否 | 兼容配置：未显式传入 `memory_mode` 时，设为 `true` 默认使用 PostgreSQL |
 
 ### 9.7 路径解析
 
@@ -856,9 +870,9 @@ uv run -m rag.vector_store
 | ID | 优先级 | 问题 | 证据 | 影响 | 建议 |
 | --- | --- | --- | --- | --- | --- |
 | TD-01 | P2 | 提示词为通用模板，未按业务深度调优 | `prompts/main_prompt.txt`、`report_prompt.txt`、`rag_summarize.txt` | 行为已可控，但报告质量仍依赖数据与迭代 | 用 Golden Set/线上 badcase 持续迭代 |
-| TD-02 | P2 | 会话记忆默认关闭 | 默认 `checkpointer=None`；开启需 PostgreSQL 与 `USE_POSTGRES_CHECKPOINTER=true` | 多轮对话默认丢失上下文 | 生产环境开启并压测；补充会话隔离/清理策略 |
-| TD-03 | P1 | `values` 流把用户问题/工具结果当回答输出 | `stream_mode="values"` + 取 `messages[-1].content` | 页面出现重复问题、工具原始结果 | 只过滤 `AIMessage`，或改用 `stream_mode="messages"` |
-| TD-04 | P1 | UI 历史只保存最后一个 chunk | `response_messages[-1]` | 刷新后中间过程消失；流为空时 `IndexError` | 保存完整消息列表；对空流做保护 |
+| TD-02 | P2 | 记忆后端缺少生产级治理 | 现支持短期/JSON/PostgreSQL；短期重启丢失且按浏览器会话隔离、不跳进程；JSON 为单进程单文件全量重写且不可人工编辑；`FileCheckpointSaver` 依赖 `InMemorySaver` 内部结构；无历史截断/摘要 | 长期运行后上下文/文件膨胀；多实例需 PostgreSQL；升级 LangGraph 可能破坏文件模式 | 增加历史截断/摘要、文件清理与多实例压测；文件模式改按 thread 分文件或改用数据库；生产使用 PostgreSQL |
+| TD-03 | ✅ 已修复 | `values` 流把用户问题/工具结果当回答输出 | 已改为只输出不带 `tool_calls` 的 `AIMessage` 文本 | 页面不再回显问题/工具结果 | 可进一步改用 `stream_mode="messages"` 做 token 流 |
+| TD-04 | ✅ 已修复 | UI 历史只保存最后一个 chunk | `response_messages[-1]` 前已判空；文件/PostgreSQL 模式会从 checkpointer 恢复 UI 历史 | 空流不再 `IndexError`；短期记忆刷新后仍从欢迎语开始 | 如需完整过程可保存全部消息 |
 | TD-05 | P1 | `fetch_external_data` 返回类型与注解不符 | 注解 `-> str`，实际返回 `dict` | 工具输出被 JSON 字符串化；契约不清晰 | 统一返回 `str`（JSON）或改注解；补 Pydantic 模型 |
 | TD-06 | P1 | 外部 CSV 为空/解析脆弱 | `data/external/records.csv` 为空；`line.split(",")` | 查不到数据；带逗号的引号字段会错位 | 填充示例数据；改用 `csv.DictReader` |
 | TD-07 | P1 | MD5 去重只增不删 | `save_md5_hex` 只 append；无删除逻辑 | 文件更新后旧 chunk 残留、检索到过期内容 | 记录文件路径 + chunk ID；更新前按 metadata 删除 |
@@ -1006,35 +1020,38 @@ if uploaded and st.button("入库"):
 
 ### 13.4 接入会话记忆
 
-**方案 A：LangGraph Checkpointer（已实现，可选开启）**
+**当前实现：三种 LangGraph Checkpointer（✅ 已接入）**
 
-项目已提供 `memorys/postgres_checkpointer.py`，由 `ReactAgent` 在 `USE_POSTGRES_CHECKPOINTER=true` 时延迟加载：
+记忆方式由 `ReactAgent(memory_mode=...)` 选择，Streamlit **输入框左侧的记忆按钮**默认「短期记忆」：
 
 ```python
-# .env
-USE_POSTGRES_CHECKPOINTER=true
-DB_URL_POSTGRES=postgresql://...
+# app.py：底部栏里放记忆按钮与输入框
+with st.bottom:
+    composer = st.container(horizontal=True, vertical_alignment="center", gap="small")
+    with composer:
+        with st.popover("短期记忆", icon=":material/psychology:"):
+            st.radio("会话记忆方式", options=list(MEMORY_MODE_LABELS.keys()), key="memory_mode_selector")
+        prompt = st.chat_input("请输入你的问题", width="stretch")
 
-# app.py 为每个浏览器会话生成 thread_id
-st.session_state["thread_id"] = str(uuid.uuid4())
+# agent/react_agent.py
+self.checkpointer = create_checkpointer(self.memory_mode)
 
-# ReactAgent.execute_stream 内部
-config = {"configurable": {"thread_id": thread_id}} if thread_id else None
+# execute_stream 内部
+config = {"configurable": {"thread_id": thread_id}}
 agent.stream(..., context={"report": False}, config=config)
 ```
 
-- `thread_id` 用 Streamlit 的会话 ID（每个浏览器会话一个）。
-- 默认关闭；未安装 `psycopg` 或没有 PostgreSQL 时项目仍可正常启动。
-- `PostgresSaver.setup()` 幂等建表；生产环境建议配合连接池上限、备份与清理策略。
-- 多 worker 部署时，所有 worker 必须共享同一个 PostgreSQL，否则会话会漂移。
+- `short_term`：`InMemorySaver`，进程内按 `thread_id` 保存；重启即丢失。
+- `file`：`FileCheckpointSaver` 继承 `InMemorySaver`，把 `storage/writes/blobs` 以 JSON 原子写入 `memorys/chat_history/agent_checkpoints.json`；进程内单例 + 可重入锁。
+- `postgres`：`PostgresSaver` + 连接池，`setup()` 幂等建表；需在 `.env` 配置 `DB_URL_POSTGRES`。
+- `thread_id` 使用侧边栏的会话 ID（默认 `user_001`）；相同 ID 恢复历史，`delete_thread()` 清空。
+- PostgreSQL 连接失败时 `app.py` 会回退到短期记忆并在页面顶部提示（连接池 `timeout=5`，数据库未启动时约 5 秒失败）。
+- 多 worker 部署时，所有 worker 必须共享同一个 PostgreSQL；JSON 文件模式仅适合单进程。
 
-**方案 B：手动拼接历史**
+**历史方案（保留为示例）**
 
-从 `session_state` 或 `FileChatMessageHistory` 读取历史，转成 `messages` 列表一并传入。简单，但历史会无限增长，需要截断/摘要。
-
-**方案 C：复用 `memorys/`**
-
-`FileChatMessageHistory` + `RunnableWithMessageHistory` 是为“链”设计的，不是为 `create_agent` 设计的。可以复用它的存储格式，但不要把 `RunnableWithMessageHistory` 直接套在 Agent 上。
+- 方案 B：手动拼接历史（`session_state` 或 `FileChatMessageHistory`），简单但需自行截断/摘要。
+- 方案 C：`FileChatMessageHistory` + `RunnableWithMessageHistory` 面向 LCEL 链，不直接套在 `create_agent` 上；`memorys/persistent_memory.py` 与 `temporary_memory.py` 仍作为学习示例保留。
 
 ### 13.5 新增场景提示词
 
@@ -1269,10 +1286,14 @@ uv run streamlit run app.py --server.port 8501 --server.address 0.0.0.0
 | 路径工具 | `utils/path_tool.py` |
 | 文件/MD5 | `utils/file_handler.py` |
 | 日志 | `utils/logger_handler.py` |
-| 会话持久化 | `memorys/postgres_checkpointer.py` |
+| 会话记忆方式工厂 | `memorys/memory_factory.py` |
+| 文件型 checkpointer | `memorys/file_checkpointer.py` |
+| PostgreSQL checkpointer | `memorys/postgres_checkpointer.py` |
+| 短期/文件历史示例（未接入主链路） | `memorys/temporary_memory.py`、`memorys/persistent_memory.py` |
 | 配置 | `config/*.yml` |
 | 提示词 | `prompts/*.txt` |
 | 环境补丁 | `env_patch/` |
+| 重要变更日志 | `CHANGELOG.md` |
 
 ### 16.2 常用命令
 
@@ -1308,3 +1329,4 @@ uv run -m utils.logger_handler
 | 修改目录结构 | 本文 5.1；README 目录树；PROJECT_OVERVIEW 第 6 节 |
 | 新增/删除文档或章节 | README 导读/文档地图；PROJECT_OVERVIEW 第 8 节；AGENTS 阅读顺序 |
 | 修复技术债 | 本文 12；PROJECT_OVERVIEW 第 7 节 |
+| 任何功能性改动（新增/变更/修复） | `CHANGELOG.md` 的 `## [Unreleased]` 补一条（Keep a Changelog 分组：Added/Changed/Deprecated/Removed/Fixed/Security）；不要把增量日志写进本文正文 |

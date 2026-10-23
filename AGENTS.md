@@ -8,6 +8,7 @@
 2. `README.md` 的「快速开始」「配置入口速查」：只在需要命令/环境变量时读。
 3. `docs/ARCHITECTURE.md` 的对应章节：按 `PROJECT_OVERVIEW.md` 第 8 节索引按需读，不要默认整份加载。
 4. 源码：需要精确行为时再读；代码是最终事实源。
+5. `CHANGELOG.md`：只在需要知道“最近改了什么 / 为什么改”时读；它是 Keep a Changelog 格式的人工摘要，不是 git log。
 
 ## 不要做的事
 
@@ -24,6 +25,7 @@
 - 改 RAG → `ARCHITECTURE.md` 7、`rag-pipeline.svg`。
 - 改配置 → `ARCHITECTURE.md` 9、`README.md` 配置速查。
 - 改模型/依赖/目录 → 对应技术栈、拓扑与目录树章节；**图也要同步**：`architecture.svg` 的模型/存储层节点与副标题（改动落在 RAG 链上的模型时，再同步 `rag-pipeline.svg` 的 ChatModel 节点）。
+- 任何值得记录的改动（新增/变更/废弃/移除/修复）→ 归入 `CHANGELOG.md` 的 `## [Unreleased]`，按 Keep a Changelog 分组（Added / Changed / Deprecated / Removed / Fixed / Security）写英文标题 + 中文描述；发布时才改成版本标题。不要把增量日志写进架构正文。
 
 ## 冲突处理
 

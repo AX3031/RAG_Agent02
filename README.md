@@ -27,6 +27,7 @@
 | [docs/architecture.svg](docs/architecture.svg) | 分层架构图（人看） |
 | [docs/rag-pipeline.svg](docs/rag-pipeline.svg) | RAG 数据流图（人看） |
 | [AGENTS.md](AGENTS.md) | AI 阅读约定（可选，供编码助手使用） |
+| [CHANGELOG.md](CHANGELOG.md) | 重要变更日志（Keep a Changelog 格式，未发布改动在 `[Unreleased]`） |
 
 **本文目录**
 
@@ -72,7 +73,7 @@
 | 模型降级（主模型 → 备用模型） | ✅ 已接入 | `agent/tools/middleware.py` → `ModelFallbackMiddleware` |
 | 外部使用记录查询 | 🧪 示例 | `fetch_external_data` 读取 CSV，示例文件当前为空 |
 | 天气 / 城市 / 用户 ID / 月份 | 🧪 模拟 | `agent/tools/agent_tools.py` 中返回随机或固定值 |
-| 会话记忆（PostgreSQL checkpointer） | 🧪 可选 | `memorys/postgres_checkpointer.py`；`USE_POSTGRES_CHECKPOINTER=true` 开启 |
+| 会话记忆（短期 / 本地 JSON / PostgreSQL） | ✅ 已接入 | `app.py` 输入框左侧按钮切换；`memorys/memory_factory.py`、`file_checkpointer.py`、`postgres_checkpointer.py` |
 | 文件上传入库 | 🧪 预留 | `app_file_uploader.py` 当前为空壳 |
 | 鉴权 / 多用户 / 限流 | ❌ 未实现 | — |
 
@@ -97,7 +98,7 @@
 | 配置 | PyYAML / python-dotenv | 6.0.3 / 1.2.3 | YAML 配置、`.env` 加载 |
 | HTTP 客户端 | requests | 2.34.2 | 百度联网搜索 |
 
-模型：`qwen3.5-flash`（对话，经 DashScope OpenAI 兼容模式）；`text-embedding-v4`（向量化）；`deepseek-v4-flash-0731`（备用对话模型，主模型失败时自动降级）。
+模型：`qwen3.5-flash`（对话，经 DashScope OpenAI 兼容模式）；`text-embedding-v4`（向量化）；`glm-5`（备用对话模型，主模型失败时自动降级）。
 
 ---
 
@@ -130,8 +131,8 @@ uv sync
 | `OPEN_API_KEY` | `model/factory.py` 中 `init_chat_model(api_key=...)` | 是（注意变量名不是 `OPENAI_API_KEY`） |
 | `BASE_URL_DASHSCOPE` | `init_chat_model(base_url=...)` 的 OpenAI 兼容端点 | 是 |
 | `DASHSCOPE_API_KEY` | `DashScopeEmbeddings` 隐式读取 | 是 |
-| `DB_URL_POSTGRES` | `memorys/postgres_checkpointer.py` | 否；启用 `USE_POSTGRES_CHECKPOINTER=true` 时必需 |
-| `USE_POSTGRES_CHECKPOINTER` | `agent/react_agent.py` | 否；设为 `true` 开启 PostgreSQL 会话持久化 |
+| `DB_URL_POSTGRES` | `memorys/postgres_checkpointer.py` | 否；在 Streamlit 选择 PostgreSQL 记忆方式时必需 |
+| `USE_POSTGRES_CHECKPOINTER` | `agent/react_agent.py` | 否；兼容配置，未显式传入 `memory_mode` 时默认使用 PostgreSQL |
 | `API_KEY_BAIDU` | `web_search_baidu` | 否；不配置时工具返回空字符串 |
 | `BASE_URL_DEEPSEEK`、`API_KEY_DEEPSEEK`、`API_HOST_DASHSCOPE` | 当前代码未使用 | 否，预留 |
 
@@ -149,7 +150,13 @@ uv run -m rag.vector_store
 uv run streamlit run app.py
 ```
 
-浏览器打开 Streamlit 输出的地址即可对话。
+浏览器打开 Streamlit 输出的地址即可对话。**对话输入框左侧**有一个记忆按钮（显示当前方式），点击后弹出列表可切换：
+
+- **短期记忆（默认）**：仅在当前进程内按会话 ID 保留上下文，重启即丢失。
+- **本地文件（JSON）**：写入 `memorys/chat_history/agent_checkpoints.json`，重启后可恢复。
+- **PostgreSQL**：使用 `.env` 的 `DB_URL_POSTGRES`，支持跨进程/多实例恢复。
+
+弹层底部显示当前方式的存储位置与会话 ID；左侧栏「会话管理」提供会话 ID、新建会话与清空记忆（后续可在此列出不同会话记录）。相同会话 ID 即可恢复对应历史。
 
 ### 4.6 常用自检命令
 
@@ -169,6 +176,7 @@ uv run -m utils.logger_handler   # 验证日志输出
 project2/
 ├── README.md                   # ✅ 项目入口、导读与命令
 ├── AGENTS.md                   # ⚙️ AI 阅读约定
+├── CHANGELOG.md                # ✅ 重要变更日志（Keep a Changelog）
 ├── app.py                      # ✅ Streamlit 对话入口
 ├── app_file_uploader.py        # 🧪 文件上传入口（空壳，待实现）
 ├── main.py                     # 🧪 PyCharm 默认模板，无业务逻辑
@@ -186,9 +194,11 @@ project2/
 ├── model/
 │   └── factory.py              # ✅ Chat / Embedding 工厂
 ├── memorys/
+│   ├── memory_factory.py       # ✅ 记忆方式工厂（短期 / 文件 / PostgreSQL）
+│   ├── file_checkpointer.py    # ✅ JSON 文件型 checkpointer
 │   ├── postgres_checkpointer.py  # 🧪 PostgreSQL checkpointer（可选）
-│   ├── persistent_memory.py    # 🧪 文件型会话历史实现
-│   └── temporary_memory.py     # 🧪 内存型会话历史实现
+│   ├── persistent_memory.py    # 🧪 文件型会话历史实现（示例）
+│   └── temporary_memory.py     # 🧪 内存型会话历史实现（示例）
 ├── utils/
 │   ├── config_handler.py       # ⚙️ YAML 配置加载
 │   ├── prompt_loader.py        # ⚙️ 三套提示词加载
@@ -237,7 +247,9 @@ project2/
 | 换提示词 | `prompts/*.txt`（RAG 提示词需重启；Agent 系统提示词每次模型调用前重读） |
 | 新增工具 | `agent/tools/agent_tools.py` + `agent/react_agent.py` 的 tools 列表 |
 | 新增场景 | 参考报告场景：工具 + 中间件标记 + 动态提示词 + prompt 文件 |
-| 开启会话记忆（PostgreSQL） | `.env` 设置 `USE_POSTGRES_CHECKPOINTER=true`；连接串 `DB_URL_POSTGRES` |
+| 切换会话记忆方式 | Streamlit **输入框左侧的记忆按钮**（点击弹出列表）：短期记忆（默认）/ 本地文件（JSON）/ PostgreSQL |
+| 管理会话 ID / 新建会话 / 清空记忆 | Streamlit 左侧栏「会话管理」（后续可在此列出会话记录） |
+| PostgreSQL 连接 | `.env` 的 `DB_URL_POSTGRES`；`USE_POSTGRES_CHECKPOINTER=true` 仅作为无 UI 场景的默认记忆方式 |
 | 百度联网搜索 | `.env` 的 `API_KEY_BAIDU` |
 
 ---
@@ -246,8 +258,8 @@ project2/
 
 先看这 5 条：
 
-1. **默认没有跨轮记忆**：默认不启用 checkpointer；设置 `USE_POSTGRES_CHECKPOINTER=true` 后，`app.py` 会用 session 级 `thread_id` 持久化会话（需 PostgreSQL）。
-2. **流式输出是“消息块级”而非 token 级**：`stream_mode="values"` 会把每条状态消息的 `content` 直接输出，可能把用户问题、工具返回也当作回答显示。
+1. **默认是短期记忆**：进程内按会话 ID 保留上下文，重启即丢失；本地文件/PostgreSQL 模式可跨进程恢复（PostgreSQL 需配置连接串）。
+2. **流式输出是“消息块级”而非 token 级**：`stream_mode="values"` 只输出 `AIMessage` 文本，用户问题与工具中间结果不再回显；UI 只保存最后一个 chunk。
 3. **PII 脱敏覆盖不完整**：`PIIMiddleware` 只处理模型输入/输出，日志与缓存中的敏感信息尚未脱敏。
 4. **外部数据示例为空**：`data/external/records.csv` 为空，`fetch_external_data` 会查不到记录；CSV 解析也未处理带逗号的引号字段。
 5. **知识库只增不删**：文件内容变化会产生新 MD5 并追加新 chunk，旧向量不会自动清理。
@@ -265,6 +277,7 @@ project2/
 | [docs/architecture.svg](docs/architecture.svg) | 分层架构总览图 |
 | [docs/rag-pipeline.svg](docs/rag-pipeline.svg) | 知识入库与在线检索数据流图 |
 | [AGENTS.md](AGENTS.md) | AI 阅读约定（可选，供编码助手使用） |
+| [CHANGELOG.md](CHANGELOG.md) | 重要变更：加了什么 / 改了什么 / 修了什么 |
 
 ---
 
