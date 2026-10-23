@@ -1304,7 +1304,7 @@ uv run -m utils.logger_handler
 | 新增/删除中间件 | 本文 5.2、8、11；PROJECT_OVERVIEW 第 3 节；`architecture.svg` 编排层 |
 | 新增配置项 | 本文 9；README 配置速查；PROJECT_OVERVIEW 第 8 节 |
 | 修改 RAG 流程/参数 | 本文 7；PROJECT_OVERVIEW 第 5 节；`rag-pipeline.svg` |
-| 修改模型/Embedding | 本文 3、9.6、13.6；README 技术栈；PROJECT_OVERVIEW 第 2 节 |
+| 修改模型/Embedding | 本文 3、9.6、13.6；README 技术栈；PROJECT_OVERVIEW 第 2 节；`architecture.svg` 模型/存储层节点与副标题（涉及 RAG 链上的模型时同步 `rag-pipeline.svg` 的 ChatModel 节点） |
 | 修改目录结构 | 本文 5.1；README 目录树；PROJECT_OVERVIEW 第 6 节 |
 | 新增/删除文档或章节 | README 导读/文档地图；PROJECT_OVERVIEW 第 8 节；AGENTS 阅读顺序 |
 | 修复技术债 | 本文 12；PROJECT_OVERVIEW 第 7 节 |

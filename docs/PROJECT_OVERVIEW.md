@@ -99,5 +99,5 @@ env_patch/    .pth + sitecustomize.py
 完整约定见 [AGENTS.md](../AGENTS.md)。核心三点：
 
 - 先读本文件，再按第 8 节索引只读 `ARCHITECTURE.md` 对应章节，不要整份加载。
-- 不要读 `docs/*.svg`；图是给人看的，文字模块表更适合 AI。
+- 不要为了建立认知去整份读 `docs/*.svg`；图是给人看的，文字模块表更适合 AI（改图时只 grep `<text>` 节点定位）。
 - 代码是最终事实源；文档与代码冲突时，以代码为准并更新文档。

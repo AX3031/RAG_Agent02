@@ -11,7 +11,7 @@
 
 ## 不要做的事
 
-- 不要读 `docs/*.svg`。图是给人看的，文字模块表更适合 AI。
+- 不要为了建立认知去整份读 `docs/*.svg`。图是给人看的，文字模块表更适合 AI。但**核对/更新图里的文字时**，用 grep 只取 `<text>` 节点定位，改完用 XML 解析校验一次。
 - 不要假设 `utils/runtime.py` 存在；当前运行时初始化由 `env_patch/` 的 `.pth + sitecustomize.py` 完成。
 - 不要把 `ARCHITECTURE.md` 里的“示例/预留”当成已接入主链路；状态标记以 ✅ / 🧪 / ⚙️ / ⚠️ 为准。
 
@@ -23,7 +23,7 @@
 - 新增/删除中间件 → `ARCHITECTURE.md` 5.2/8/11、`architecture.svg` 编排层。
 - 改 RAG → `ARCHITECTURE.md` 7、`rag-pipeline.svg`。
 - 改配置 → `ARCHITECTURE.md` 9、`README.md` 配置速查。
-- 改模型/依赖/目录 → 对应技术栈、拓扑与目录树章节。
+- 改模型/依赖/目录 → 对应技术栈、拓扑与目录树章节；**图也要同步**：`architecture.svg` 的模型/存储层节点与副标题（改动落在 RAG 链上的模型时，再同步 `rag-pipeline.svg` 的 ChatModel 节点）。
 
 ## 冲突处理
 
