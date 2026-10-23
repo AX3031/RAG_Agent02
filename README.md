@@ -152,11 +152,11 @@ uv run streamlit run app.py
 
 浏览器打开 Streamlit 输出的地址即可对话。**对话输入框左侧**有一个记忆按钮（显示当前方式），点击后弹出列表可切换：
 
-- **短期记忆（默认）**：仅在当前进程内按会话 ID 保留上下文，重启即丢失。
-- **本地文件（JSON）**：写入 `memorys/chat_history/agent_checkpoints.json`，重启后可恢复。
-- **PostgreSQL**：使用 `.env` 的 `DB_URL_POSTGRES`，支持跨进程/多实例恢复。
+- **短期记忆（默认，不存档记忆）**：仅在当前进程内按会话 ID 保留上下文，刷新页面或重启即丢失。
+- **本地记忆（以JSON格式本地存档）**：写入 `memorys/chat_history/agent_checkpoints.json`，重启后可恢复。
+- **PostgreSQL（存档入数据库，需配置）**：使用 `.env` 的 `DB_URL_POSTGRES`，支持跨进程/多实例恢复。
 
-弹层底部显示当前方式的存储位置与会话 ID；左侧栏「会话管理」提供会话 ID、新建会话与清空记忆（后续可在此列出不同会话记录）。相同会话 ID 即可恢复对应历史。
+弹层底部显示当前方式的存储位置；左侧栏「会话管理」提供会话 ID、新建会话与清空记忆（后续可在此列出不同会话记录）。相同会话 ID 即可恢复对应历史。
 
 ### 4.6 常用自检命令
 
@@ -247,7 +247,7 @@ project2/
 | 换提示词 | `prompts/*.txt`（RAG 提示词需重启；Agent 系统提示词每次模型调用前重读） |
 | 新增工具 | `agent/tools/agent_tools.py` + `agent/react_agent.py` 的 tools 列表 |
 | 新增场景 | 参考报告场景：工具 + 中间件标记 + 动态提示词 + prompt 文件 |
-| 切换会话记忆方式 | Streamlit **输入框左侧的记忆按钮**（点击弹出列表）：短期记忆（默认）/ 本地文件（JSON）/ PostgreSQL |
+| 切换会话记忆方式 | Streamlit **输入框左侧的记忆按钮**（点击弹出列表）：短期记忆（默认，不存档记忆）/ 本地记忆（以JSON格式本地存档）/ PostgreSQL（存档入数据库，需配置） |
 | 管理会话 ID / 新建会话 / 清空记忆 | Streamlit 左侧栏「会话管理」（后续可在此列出会话记录） |
 | PostgreSQL 连接 | `.env` 的 `DB_URL_POSTGRES`；`USE_POSTGRES_CHECKPOINTER=true` 仅作为无 UI 场景的默认记忆方式 |
 | 百度联网搜索 | `.env` 的 `API_KEY_BAIDU` |
@@ -258,7 +258,7 @@ project2/
 
 先看这 5 条：
 
-1. **默认是短期记忆**：进程内按会话 ID 保留上下文，重启即丢失；本地文件/PostgreSQL 模式可跨进程恢复（PostgreSQL 需配置连接串）。
+1. **默认是短期记忆**：进程内按会话 ID 保留上下文，刷新页面或重启即丢失；本地记忆/PostgreSQL 模式可跨进程恢复（PostgreSQL 需配置连接串）。
 2. **流式输出是“消息块级”而非 token 级**：`stream_mode="values"` 只输出 `AIMessage` 文本，用户问题与工具中间结果不再回显；UI 只保存最后一个 chunk。
 3. **PII 脱敏覆盖不完整**：`PIIMiddleware` 只处理模型输入/输出，日志与缓存中的敏感信息尚未脱敏。
 4. **外部数据示例为空**：`data/external/records.csv` 为空，`fetch_external_data` 会查不到记录；CSV 解析也未处理带逗号的引号字段。

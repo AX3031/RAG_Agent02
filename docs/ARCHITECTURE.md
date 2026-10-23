@@ -459,7 +459,7 @@ AIMessage("深圳今天晴天，26℃...")
 
 ### 6.4 多轮记忆（三种后端）
 
-记忆方式由 `ReactAgent(memory_mode=...)` 决定，Streamlit **输入框左侧的记忆按钮**默认是「短期记忆」，点击后弹出列表：
+记忆方式由 `ReactAgent(memory_mode=...)` 决定，Streamlit **输入框左侧的记忆按钮**默认是「短期记忆（默认，不存档记忆）」，点击后弹出列表（选项文案见 `MEMORY_MODE_LABELS`）：
 
 | 方式 | checkpointer | 存储位置 | 生命周期 |
 | --- | --- | --- | --- |
@@ -470,7 +470,7 @@ AIMessage("深圳今天晴天，26℃...")
 - `execute_stream` 每次只传当前 `HumanMessage`，历史由 checkpointer 依据 `thread_id` 自动恢复。
 - `app.py` 的会话 ID 默认 `user_001`，在侧边栏「会话管理」修改；相同 ID 在文件/PostgreSQL 模式会恢复上下文与 UI 聊天记录。
 - 侧边栏「清空记忆」调用 `checkpointer.delete_thread(thread_id)`；「新建会话」生成新的随机 ID。
-- 弹层底部的 caption 显示当前方式的存储位置与会话 ID；PostgreSQL 连不上时约 5 秒内回退为短期记忆，并在页面顶部提示。
+- 弹层底部的 caption 显示当前方式的存储位置；PostgreSQL 连不上时约 5 秒内回退为短期记忆，并在页面顶部提示。
 - 未显式传入 `memory_mode` 时，`USE_POSTGRES_CHECKPOINTER=true` 仍可把默认方式切到 PostgreSQL（兼容旧配置）。
 
 接入细节见 13.4。

@@ -72,7 +72,7 @@ env_patch/    .pth + sitecustomize.py
 
 ## 7. 关键约束
 
-- **默认短期记忆**：输入框左侧的记忆按钮可选短期（内存，默认）/ 本地 JSON / PostgreSQL；侧边栏管理会话 ID；短期记忆重启即丢失。
+- **默认短期记忆**：输入框左侧的记忆按钮可选短期（默认，不存档）/ 本地 JSON 存档 / PostgreSQL；侧边栏管理会话 ID；短期记忆刷新页面或重启即丢失。
 - **消息块级流式**：`stream_mode="values"` 只过滤输出 `AIMessage` 文本，工具中间消息不再显示；UI 只保存最后一个 chunk。
 - **提示词已补全**：三套提示词已补全角色、工具规则、输出结构与边界，仍需按业务持续迭代。
 - **外部 CSV 为空**：`data/external/records.csv` 当前 0 字节；`fetch_external_data` 注解为 `str`、实际返回 `dict`。

@@ -18,7 +18,7 @@ MODE_SHORT_LABELS = {
 
 # 各记忆方式的存储位置提示，展示在记忆选择弹层里
 MEMORY_MODE_HINTS = {
-    "short_term": "仅在当前进程内保留，重启即丢失",
+    "short_term": "仅在当前进程内保留，刷新页面或重启即丢失",
     "file": "写入 memorys/chat_history/agent_checkpoints.json",
     "postgres": "写入 PostgreSQL，可跨进程/多实例恢复",
 }
@@ -83,7 +83,7 @@ with st.bottom:
             )
             selected_label = picked_label or current_label
             selected_mode = MEMORY_MODE_LABELS[selected_label]
-            st.caption(f"{MEMORY_MODE_HINTS[selected_mode]}｜会话：{_shorten(st.session_state['session_id'])}")
+            st.caption(f"{MEMORY_MODE_HINTS[selected_mode]}")
 
         prompt = st.chat_input("请输入你的问题", width="stretch")
 

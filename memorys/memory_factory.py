@@ -11,9 +11,9 @@ DEFAULT_MEMORY_MODE = "short_term"
 
 # 顺序即 Streamlit 下拉/单选的展示顺序，第一个为默认值
 MEMORY_MODE_LABELS = {
-    "短期记忆（内存，默认）": "short_term",
-    "本地文件（JSON）": "file",
-    "PostgreSQL（需配置）": "postgres",
+    "短期记忆（默认，不存档记忆）": "short_term",
+    "本地记忆（以JSON格式本地存档）": "file",
+    "PostgreSQL（存档入数据库，需配置）": "postgres",
 }
 
 
