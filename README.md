@@ -2,6 +2,8 @@
 
 基于 **LangChain 1.x `create_agent`（LangGraph）** 构建的工具调用型智能客服原型：支持 RAG 知识问答、业务数据查询、报告场景提示词切换，以及 Streamlit 对话界面。
 
+RAG 已改造为**可被主 Agent 调用的检索子 Agent**：输出结构化 `evidence[] + answerable`，使用 Dense + BM25 + RRF + Rerank 混合检索，并有 Golden Set 离线评测、父子分块、可回答性判定、trace 与降级/熔断。入门讲解见 [docs/rag-improvement/](docs/rag-improvement/00-进度备忘录.md)。
+
 > 这是一份面向开发者的项目入口文档。5 分钟速览见 [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md)；深入原理、配置项、扩展步骤与技术债见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
 ---
@@ -26,6 +28,7 @@
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 当前状态的深度参考：模块、流程、配置、扩展、技术债 |
 | [docs/architecture.svg](docs/architecture.svg) | 分层架构图（人看） |
 | [docs/rag-pipeline.svg](docs/rag-pipeline.svg) | RAG 数据流图（人看） |
+| [docs/rag-improvement/](docs/rag-improvement/00-进度备忘录.md) | RAG 改造的进度备忘、分阶段入门讲解与反思 |
 | [AGENTS.md](AGENTS.md) | AI 阅读约定（可选，供编码助手使用） |
 | [CHANGELOG.md](CHANGELOG.md) | 重要变更日志（Keep a Changelog 格式，未发布改动在 `[Unreleased]`） |
 
@@ -64,7 +67,14 @@
 | 能力 | 状态 | 实现位置 |
 | --- | --- | --- |
 | 多轮工具调用（ReAct 循环） | ✅ 已接入 | `agent/react_agent.py` → `create_agent` |
-| RAG 知识库问答 | ✅ 已接入 | `rag/rag_service.py` + `rag/vector_store.py` |
+| RAG 证据检索（结构化契约） | ✅ 已接入 | `retrieve_knowledge` → `rag/retrieval_service.py` → `rag/contract.py` |
+| RAG 受控问答 | ✅ 已接入 | `rag/rag_service.py` |
+| 混合检索（Dense + BM25 + RRF + Rerank） | ✅ 已接入 | `rag/sparse_index.py`、`rag/retrieval_service.py` |
+| 父子分块与确定性 chunk_id | ✅ 已接入 | `rag/chunking.py` |
+| 索引清单 / 更新删除传播 | ✅ 已接入 | `rag/index_store.py`、`rag/vector_store.py` |
+| 可回答性判定（LLM + 阈值兜底） | ✅ 已接入 | `rag/answerability.py` |
+| 检索 trace / 分段延迟 / 缓存 | ✅ 已接入 | `rag/telemetry.py` |
+| 离线检索评测（Golden Set + Recall/MRR/NDCG） | ✅ 已接入 | `eval/` |
 | 工具调用日志 | ✅ 已接入 | `agent/tools/middleware.py` → `monitor_tool` |
 | 模型调用前状态日志 | ✅ 已接入 | `agent/tools/middleware.py` → `log_before_model` |
 | 报告场景动态提示词 | ✅ 已接入 | `fill_context_for_report` + `report_prompt_switch` |
@@ -92,13 +102,15 @@
 | 社区集成 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader |
 | 向量库 | langchain-chroma / chromadb | 1.1.0 / 1.5.9 | 本地持久化向量检索 |
 | 文本切分 | langchain-text-splitters | 1.1.2 | `RecursiveCharacterTextSplitter` |
-| 模型服务 | dashscope | 1.27.5 | 通义千问/Embedding SDK |
+| 模型服务 | dashscope | 1.27.5 | 通义千问 / Embedding / gte-rerank SDK |
+| 稀疏检索 | 自研 BM25 | — | 中文字符 unigram + bigram，无新增依赖 |
+| 检索评测 | 标准库 stdlib | — | Recall@K / MRR / NDCG，离线可复现 |
 | UI | streamlit | 1.64.0 | 对话界面与流式渲染 |
 | 文档解析 | pypdf | 6.18.1 | PDF 文本提取 |
 | 配置 | PyYAML / python-dotenv | 6.0.3 / 1.2.3 | YAML 配置、`.env` 加载 |
 | HTTP 客户端 | requests | 2.34.2 | 百度联网搜索 |
 
-模型：`qwen3.5-flash`（对话，经 DashScope OpenAI 兼容模式）；`text-embedding-v4`（向量化）；`glm-5`（备用对话模型，主模型失败时自动降级）。
+模型：`qwen3.5-flash`（对话，经 DashScope OpenAI 兼容模式）；`text-embedding-v4`（向量化）；`glm-5`（备用对话模型，主模型失败时自动降级）；`qwen-flash`（Answerability 判定，低延迟）；`gte-rerank-v2`（精排）。
 
 ---
 
@@ -139,10 +151,17 @@ uv sync
 ### 4.4 构建/更新知识库
 
 ```powershell
+# 可选：把本地需求文档转成评测语料（不纳入版本管理）
+uv run -m eval.prepare_local_corpus
+
+# 增量入库：同版本跳过；内容变化则先写新版本、再删旧块；清理磁盘上已删除的文件
 uv run -m rag.vector_store
+
+# 全量重建（清空当前集合后重新入库）
+uv run -m rag.vector_store --rebuild
 ```
 
-该命令扫描 `data/` 下的 `.txt`/`.pdf`，切分后写入 `chroma_db/`，并用 `md5.text` 去重。已处理过的文件会跳过。
+该命令扫描 `data/` 下的 `.txt`/`.pdf`，做**父子分块**后写入 `chroma_db/`（默认集合 `agent_v2`），并在 `storage/index_manifest.json` 记录「文件 → 版本 → chunk_id」清单。旧的 `md5.text` 不再作为权威去重依据。
 
 ### 4.5 启动对话界面
 
@@ -168,6 +187,24 @@ uv run -m utils.logger_handler   # 验证日志输出
 
 > 前两个模块会触发真实的模型/检索调用，运行前确认 `.env` 已配置；`utils.logger_handler` 只写日志。
 
+### 4.7 RAG 离线评测
+
+```powershell
+# 三种模式同批对比：dense（旧基线）/ hybrid（Dense+BM25+RRF）/ full（+rerank+answerability）
+uv run -m eval.run_eval --top-k 10
+
+# 只在 full 模式未大面积降级时，才覆盖基准快照
+uv run -m eval.run_eval --top-k 10 --save-baseline
+
+# 用 Golden Set 校准可回答性阈值
+uv run -m eval.calibrate_threshold
+
+# 离线单测（不需要网络/模型）
+uv run -m unittest discover -s tests -v
+```
+
+Golden Set：`eval/golden_set.jsonl`（论语 50 条，可复现）+ `eval/golden_set.local.jsonl`（需求文档 21 条，本地生成、不提交）。指标定义见 [docs/rag-improvement/01-阶段0-评估标尺.md](docs/rag-improvement/01-阶段0-评估标尺.md)。
+
 ---
 
 ## 5. 目录结构
@@ -184,13 +221,28 @@ project2/
 ├── pyproject.toml / uv.lock    # 依赖与锁文件
 ├── .env                        # 本地密钥（git 忽略）
 ├── agent/
-│   ├── react_agent.py          # ✅ Agent 组装与流式执行
+│   ├── react_agent.py          # ✅ Agent 组装、流式执行、证据不足拒答护栏
 │   └── tools/
-│       ├── agent_tools.py      # ✅ 8 个 @tool
+│       ├── agent_tools.py      # ✅ 9 个 @tool（含 retrieve_knowledge）
 │       └── middleware.py       # ✅ 6 个中间件
 ├── rag/
-│   ├── rag_service.py          # ✅ 检索 + 总结 LCEL 链
-│   └── vector_store.py         # ✅ Chroma 入库、检索、MD5 去重
+│   ├── retrieval_service.py    # ✅ Dense + BM25 + RRF + rerank + 父子扩展
+│   ├── contract.py             # ✅ 证据契约与 5 态状态机
+│   ├── chunking.py             # ✅ 结构化父子分块、确定性 chunk_id
+│   ├── index_store.py          # ✅ 索引清单与父块存储（原子写）
+│   ├── sparse_index.py         # ✅ 自研 BM25（中文 unigram + bigram）
+│   ├── answerability.py        # ✅ LLM 可回答性判定 + 阈值兜底
+│   ├── telemetry.py            # ✅ trace / 分段延迟 / TTL 缓存
+│   ├── rag_service.py          # ✅ 受控生成（证据 → 答案）
+│   └── vector_store.py         # ✅ 入库、更新、删除、重建
+├── eval/
+│   ├── golden_set.jsonl        # ✅ 论语 Golden Set（50 条，可提交）
+│   ├── golden_set.local.jsonl  # 🧪 需求文档 Golden Set（本地，不入库）
+│   ├── retrieval_metrics.py    # ✅ Recall/MRR/NDCG/随机基线
+│   ├── run_eval.py             # ✅ 三模式离线评测
+│   ├── calibrate_threshold.py  # ✅ 可回答性阈值校准
+│   └── results/baseline.json   # ✅ 基准快照
+├── tests/                      # ✅ 35 条 stdlib unittest
 ├── model/
 │   └── factory.py              # ✅ Chat / Embedding 工厂
 ├── memorys/
@@ -207,12 +259,14 @@ project2/
 │   └── logger_handler.py       # ⚙️ 控制台 + 按日文件日志
 ├── config/                     # ⚙️ rag / chroma / prompts / agent 配置
 ├── prompts/                    # ⚙️ 系统提示词、RAG 提示词、报告提示词
-├── data/                       # 原始知识文件；external/ 下为业务 CSV
-├── chroma_db/                  # Chroma 持久化目录（示例库 3 个 chunk）
-├── md5.text                    # 已入库文件的 MD5 清单
+├── data/                       # 原始知识文件（论语.pdf 等）；external/ 下为业务 CSV
+├── chroma_db/                  # Chroma 持久化目录（已加入 .gitignore；历史跟踪需手动清理）
+├── storage/                    # 索引清单 / 父块（运行时生成，不入库）
 ├── logs/                       # 按日日志
 ├── env_patch/                  # ⚙️ 虚拟环境补丁（.pth + sitecustomize.py）
-└── docs/                       # 速览、架构文档与 SVG 图
+└── docs/
+    ├── PROJECT_OVERVIEW.md / ARCHITECTURE.md / *.svg
+    └── rag-improvement/        # ✅ 分阶段入门讲解 + 反思备忘录
 ```
 
 图例：✅ 主链路 / 🧪 示例或预留 / ⚙️ 基础设施。
@@ -227,9 +281,12 @@ project2/
 2. `agent/react_agent.py`：看 `create_agent` 的模型、工具、中间件三要素。
 3. `agent/tools/agent_tools.py`：看工具如何用 `@tool` 描述、如何调用 RAG 与 CSV。
 4. `agent/tools/middleware.py`：看工具监控、模型前日志、动态提示词切换、PII 脱敏与模型降级。
-5. `rag/rag_service.py` → `rag/vector_store.py`：看 RAG 查询链与入库流程。
-6. `model/factory.py` → `config/*.yml`：看模型/向量模型与参数如何装配。
-7. `utils/*`：看配置、路径、日志、提示词加载的公共约定。
+5. `rag/retrieval_service.py` → `rag/contract.py`：看检索子 Agent 的契约与混合检索主流程。
+6. `rag/chunking.py` → `rag/index_store.py` → `rag/vector_store.py`：看父子分块、索引清单与更新/删除传播。
+7. `rag/answerability.py` → `rag/telemetry.py`：看可回答性、trace 与缓存。
+8. `eval/`：看 Golden Set、指标与三模式评测。
+9. `model/factory.py` → `config/*.yml`：看模型/向量模型与参数如何装配。
+10. `utils/*`：看配置、路径、日志、提示词加载的公共约定。
 
 更完整的调用时序、配置表、扩展步骤和已知问题见 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)。
 
@@ -241,7 +298,8 @@ project2/
 | --- | --- |
 | 换对话模型 / Embedding 模型 | `config/rag.yml` + `model/factory.py` |
 | 设置备用对话模型 | `config/rag.yml` 的 `backup_chat_model_name` |
-| 调检索条数、切分大小、集合名 | `config/chroma.yml` |
+| 调 Dense/Sparse 候选数、RRF、精排、可回答性 | `config/rag.yml` 的 `retrieval:` 段 |
+| 调切分大小、集合名、索引清单路径 | `config/chroma.yml` |
 | 换知识库目录、文件类型 | `config/chroma.yml` 的 `data_path` / `allow_knowledge_file_type` |
 | 换外部 CSV 路径 | `config/agent.yml` |
 | 换提示词 | `prompts/*.txt`（RAG 提示词需重启；Agent 系统提示词每次模型调用前重读） |
@@ -262,7 +320,10 @@ project2/
 2. **流式输出是“消息块级”而非 token 级**：`stream_mode="values"` 只输出 `AIMessage` 文本，用户问题与工具中间结果不再回显；UI 只保存最后一个 chunk。
 3. **PII 脱敏覆盖不完整**：`PIIMiddleware` 只处理模型输入/输出，日志与缓存中的敏感信息尚未脱敏。
 4. **外部数据示例为空**：`data/external/records.csv` 为空，`fetch_external_data` 会查不到记录；CSV 解析也未处理带逗号的引号字段。
-5. **知识库只增不删**：文件内容变化会产生新 MD5 并追加新 chunk，旧向量不会自动清理。
+5. **rerank 依赖外部额度**：DashScope `gte-rerank-v2` 免费额度耗尽时会降级为 RRF 排序（`status=degraded`），不会报错但精度下降。
+6. **Golden Set 规模与一致性不足**：论语 50 条 + 需求文档 21 条，暂无 holdout 与双人标注 κ。
+7. **ACL/多租户只有接口形态**：`scope` 可按元数据过滤，但没有真实鉴权上下文。
+8. **检索分块按字符而非 tokenizer**：`chunk_size=240` 是字符数，未接 tiktoken。
 
 完整清单与修复建议见 [docs/ARCHITECTURE.md#12-已知问题与技术债](docs/ARCHITECTURE.md#12-已知问题与技术债)。
 
@@ -276,6 +337,12 @@ project2/
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 架构、模块职责、调用时序、配置、扩展指南、技术债 |
 | [docs/architecture.svg](docs/architecture.svg) | 分层架构总览图 |
 | [docs/rag-pipeline.svg](docs/rag-pipeline.svg) | 知识入库与在线检索数据流图 |
+| [docs/rag-improvement/00-进度备忘录.md](docs/rag-improvement/00-进度备忘录.md) | 本次 RAG 改造的进度、决策与反思 |
+| [docs/rag-improvement/01-阶段0-评估标尺.md](docs/rag-improvement/01-阶段0-评估标尺.md) | Golden Set、指标、基线与入门讲解 |
+| [docs/rag-improvement/02-阶段1-证据契约与索引平面.md](docs/rag-improvement/02-阶段1-证据契约与索引平面.md) | 契约、确定性 ID、更新/删除传播 |
+| [docs/rag-improvement/03-阶段2-混合检索.md](docs/rag-improvement/03-阶段2-混合检索.md) | BM25 / RRF / Rerank 入门与收益 |
+| [docs/rag-improvement/04-阶段3-可回答性与工程化.md](docs/rag-improvement/04-阶段3-可回答性与工程化.md) | Answerability、trace、缓存、注入防御 |
+| [docs/rag-improvement/05-阶段4-接入与验收.md](docs/rag-improvement/05-阶段4-接入与验收.md) | Agent 接入、测试、验收与整体反思 |
 | [AGENTS.md](AGENTS.md) | AI 阅读约定（可选，供编码助手使用） |
 | [CHANGELOG.md](CHANGELOG.md) | 重要变更：加了什么 / 改了什么 / 修了什么 |
 
@@ -284,8 +351,8 @@ project2/
 ## 10. 安全与协作约定
 
 - `.env` 已加入 `.gitignore`；不要把 API Key、数据库连接串写进代码、提示词、日志或文档。
-- `logs/` 会记录用户输入与工具参数，接入真实业务后需考虑脱敏与保留周期。
+- RAG trace 只记录 `query_hash`、`doc_id` 与 `evidence_id`，不记录完整 query 与证据正文；其它中间件仍可能记录用户输入，接入真实业务后需统一脱敏与保留周期。
 - 新增入口脚本建议从项目根目录用 `uv run -m <module>` 运行；直接运行 `.py` 依赖 `env_patch` 注入的项目根路径。
 - 编码助手请先读 `docs/PROJECT_OVERVIEW.md`，并按 `AGENTS.md` 的阅读约定执行，避免整份加载长文档。
-- 修改模型/Embedding 维度后必须重建 Chroma 集合，否则会出现维度不匹配。
-- 提交前建议检查：`git status` 中是否误带 `logs/`、`chroma_db/`、`.env`、`__pycache__/`。
+- 修改模型/Embedding 维度后必须重建 Chroma 集合，否则会出现维度不匹配；`index_version` 变化时 Golden Set 结果不可直接比较。
+- 提交前建议检查：`git status` 中是否误带 `logs/`、`chroma_db/`、`storage/`、`.env`、`__pycache__/`。

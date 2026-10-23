@@ -1,0 +1,2121 @@
+{
+  "generated_at": "2026-10-23T22:56:51",
+  "golden_files": [
+    "D:\\PyDocuments\\project2\\eval\\golden_set.jsonl",
+    "D:\\PyDocuments\\project2\\eval\\golden_set.local.jsonl"
+  ],
+  "golden_count": 71,
+  "top_k": 10,
+  "corpus": {
+    "collection": "agent_v2",
+    "index_version": "idx-fca9ff4e07",
+    "chunks": 239,
+    "files": 4,
+    "parents": 96
+  },
+  "mode": "full",
+  "note": "rerank quota available at generation time",
+  "result": {
+    "mode": "full",
+    "count": 71,
+    "recall@10": 0.7439,
+    "hit@10": 0.8644,
+    "mrr@10": 0.6786,
+    "ndcg@10": 0.6547,
+    "random_recall": 0.0866,
+    "answerability_recall": 0.9322,
+    "abstention_recall": 1.0,
+    "abstention_precision": 0.75,
+    "latency_avg_ms": 703.87,
+    "latency_p95_ms": 916.34,
+    "buckets": {
+      "identifier": {
+        "count": 19,
+        "recall@10": 0.9487,
+        "mrr@10": 0.9269,
+        "ndcg@10": 0.9097
+      },
+      "multi_condition": {
+        "count": 10,
+        "recall@10": 0.65,
+        "mrr@10": 0.6676,
+        "ndcg@10": 0.5867
+      },
+      "multi_hop": {
+        "count": 8,
+        "recall@10": 0.5,
+        "mrr@10": 0.4688,
+        "ndcg@10": 0.4133
+      },
+      "semantic": {
+        "count": 22,
+        "recall@10": 0.6985,
+        "mrr@10": 0.5455,
+        "ndcg@10": 0.5531
+      }
+    },
+    "unresolved": [],
+    "queries": [
+      {
+        "id": "ly-001",
+        "query_type": "semantic",
+        "query": "孔子认为学习之后应该怎么做？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0064",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0104",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0028"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0000"
+        ],
+        "top_rerank": 0.169878,
+        "latency_ms": 771.77,
+        "recall@10": 0.0,
+        "hit@10": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      {
+        "id": "ly-002",
+        "query_type": "semantic",
+        "query": "曾子每天反省自己哪些方面？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0076",
+          "论语-69b3e2#419b729c#c0132",
+          "论语-69b3e2#419b729c#c0017",
+          "论语-69b3e2#419b729c#c0094",
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0043",
+          "论语-69b3e2#419b729c#c0104",
+          "论语-69b3e2#419b729c#c0042",
+          "论语-69b3e2#419b729c#c0093"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0000"
+        ],
+        "top_rerank": 0.178194,
+        "latency_ms": 660.8,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 0.2,
+        "ndcg@10": 0.38685280723454163
+      },
+      {
+        "id": "ly-003",
+        "query_type": "semantic",
+        "query": "孔子认为怎样做才能成为老师？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0045",
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0085",
+          "论语-69b3e2#419b729c#c0038",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0028",
+          "论语-69b3e2#419b729c#c0093",
+          "论语-69b3e2#419b729c#c0095"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0006"
+        ],
+        "top_rerank": 0.165677,
+        "latency_ms": 670.01,
+        "recall@10": 0.0,
+        "hit@10": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      {
+        "id": "ly-004",
+        "query_type": "semantic",
+        "query": "孔子如何看待只学习不思考？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0104",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0085",
+          "论语-69b3e2#419b729c#c0028",
+          "论语-69b3e2#419b729c#c0119",
+          "论语-69b3e2#419b729c#c0064"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0007"
+        ],
+        "top_rerank": 0.189492,
+        "latency_ms": 806.9,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-005",
+        "query_type": "semantic",
+        "query": "孔子说自己十五岁到七十岁分别达到什么境界？",
+        "answerable": true,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0065",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0045",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0033",
+          "论语-69b3e2#419b729c#c0089",
+          "论语-69b3e2#419b729c#c0037",
+          "论语-69b3e2#419b729c#c0004"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0004"
+        ],
+        "top_rerank": 0.157845,
+        "latency_ms": 693.65,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 0.1,
+        "ndcg@10": 0.2890648263178879
+      },
+      {
+        "id": "ly-006",
+        "query_type": "semantic",
+        "query": "孔子认为君子和小人对待义与利有什么不同？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0017",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0085",
+          "论语-69b3e2#419b729c#c0072",
+          "论语-69b3e2#419b729c#c0016",
+          "论语-69b3e2#419b729c#c0105",
+          "论语-69b3e2#419b729c#c0102",
+          "论语-69b3e2#419b729c#c0122",
+          "论语-69b3e2#419b729c#c0084",
+          "论语-69b3e2#419b729c#c0099"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0017"
+        ],
+        "top_rerank": 0.200845,
+        "latency_ms": 615.41,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-007",
+        "query_type": "semantic",
+        "query": "看到贤人时应该怎么做？",
+        "answerable": true,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0037",
+          "论语-69b3e2#419b729c#c0101",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0129",
+          "论语-69b3e2#419b729c#c0133",
+          "论语-69b3e2#419b729c#c0134",
+          "论语-69b3e2#419b729c#c0077",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0075"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0017"
+        ],
+        "top_rerank": 0.155028,
+        "latency_ms": 614.26,
+        "recall@10": 0.0,
+        "hit@10": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      {
+        "id": "ly-008",
+        "query_type": "semantic",
+        "query": "孔子如何描述自己学习不满足、教导别人不疲倦？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0035",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0072",
+          "论语-69b3e2#419b729c#c0104",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0095",
+          "论语-69b3e2#419b729c#c0038",
+          "论语-69b3e2#419b729c#c0058"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0035"
+        ],
+        "top_rerank": 0.180641,
+        "latency_ms": 668.51,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      {
+        "id": "ly-009",
+        "query_type": "semantic",
+        "query": "孔子认为几个人一起走时应该怎样学习？",
+        "answerable": true,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0093",
+          "论语-69b3e2#419b729c#c0028",
+          "论语-69b3e2#419b729c#c0123"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0038"
+        ],
+        "top_rerank": 0.153834,
+        "latency_ms": 648.41,
+        "recall@10": 0.0,
+        "hit@10": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      {
+        "id": "ly-010",
+        "query_type": "semantic",
+        "query": "孔子用什么比喻时光流逝？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0119",
+          "论语-69b3e2#419b729c#c0050",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0036",
+          "论语-69b3e2#419b729c#c0037",
+          "论语-69b3e2#419b729c#c0123",
+          "论语-69b3e2#419b729c#c0051",
+          "论语-69b3e2#419b729c#c0033"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0050"
+        ],
+        "top_rerank": 0.16564,
+        "latency_ms": 761.93,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 0.25,
+        "ndcg@10": 0.43067655807339306
+      },
+      {
+        "id": "ly-011",
+        "query_type": "semantic",
+        "query": "孔子认为应该怎样对待自己不喜欢的事情？",
+        "answerable": true,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0073",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0081",
+          "论语-69b3e2#419b729c#c0095",
+          "论语-69b3e2#419b729c#c0085",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0072",
+          "论语-69b3e2#419b729c#c0116"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0068",
+          "论语-69b3e2#419b729c#c0103"
+        ],
+        "top_rerank": 0.170443,
+        "latency_ms": 690.6,
+        "recall@10": 0.0,
+        "hit@10": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      {
+        "id": "ly-012",
+        "query_type": "semantic",
+        "query": "孔子认为工匠要做好工作需要什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0101",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0136",
+          "论语-69b3e2#419b729c#c0047",
+          "论语-69b3e2#419b729c#c0077",
+          "论语-69b3e2#419b729c#c0130"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0101"
+        ],
+        "top_rerank": 0.163758,
+        "latency_ms": 627.99,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.6309297535714575
+      },
+      {
+        "id": "ly-013",
+        "query_type": "identifier",
+        "query": "“温故而知新”的下一句是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0006",
+          "论语-69b3e2#419b729c#c0002",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0130",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0039",
+          "论语-69b3e2#419b729c#c0064",
+          "论语-69b3e2#419b729c#c0038",
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0004"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0006"
+        ],
+        "top_rerank": 0.187693,
+        "latency_ms": 657.68,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-014",
+        "query_type": "identifier",
+        "query": "“学而不思则罔”的下一句是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0104",
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0064",
+          "论语-69b3e2#419b729c#c0035",
+          "论语-69b3e2#419b729c#c0117",
+          "论语-69b3e2#419b729c#c0044",
+          "论语-69b3e2#419b729c#c0078"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0007"
+        ],
+        "top_rerank": 0.239633,
+        "latency_ms": 663.34,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-015",
+        "query_type": "identifier",
+        "query": "“知之为知之，不知为不知”的完整句子是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0039",
+          "论语-69b3e2#419b729c#c0064",
+          "论语-69b3e2#419b729c#c0021",
+          "论语-69b3e2#419b729c#c0025",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0096",
+          "论语-69b3e2#419b729c#c0045",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0033"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0007"
+        ],
+        "top_rerank": 0.193352,
+        "latency_ms": 796.36,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-016",
+        "query_type": "identifier",
+        "query": "“君子坦荡荡”的下一句是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0041",
+          "论语-69b3e2#419b729c#c0085",
+          "论语-69b3e2#419b729c#c0076",
+          "论语-69b3e2#419b729c#c0102",
+          "论语-69b3e2#419b729c#c0045",
+          "论语-69b3e2#419b729c#c0086",
+          "论语-69b3e2#419b729c#c0122",
+          "论语-69b3e2#419b729c#c0105",
+          "论语-69b3e2#419b729c#c0034",
+          "论语-69b3e2#419b729c#c0119"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0041"
+        ],
+        "top_rerank": 0.184602,
+        "latency_ms": 693.19,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-017",
+        "query_type": "identifier",
+        "query": "“岁寒，然后知松柏之后凋也”是什么意思？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0052",
+          "论语-69b3e2#419b729c#c0013",
+          "论语-69b3e2#419b729c#c0012",
+          "论语-69b3e2#419b729c#c0064",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0029",
+          "论语-69b3e2#419b729c#c0025",
+          "论语-69b3e2#419b729c#c0112",
+          "论语-69b3e2#419b729c#c0090",
+          "论语-69b3e2#419b729c#c0032"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0052"
+        ],
+        "top_rerank": 0.196552,
+        "latency_ms": 593.88,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-018",
+        "query_type": "identifier",
+        "query": "“朽木不可雕也”的下一句是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0021",
+          "论语-69b3e2#419b729c#c0052",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0051",
+          "论语-69b3e2#419b729c#c0044",
+          "论语-69b3e2#419b729c#c0134",
+          "论语-69b3e2#419b729c#c0022",
+          "论语-69b3e2#419b729c#c0033",
+          "论语-69b3e2#419b729c#c0032",
+          "论语-69b3e2#419b729c#c0050"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0021"
+        ],
+        "top_rerank": 0.198105,
+        "latency_ms": 619.99,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-019",
+        "query_type": "identifier",
+        "query": "“听其言而观其行”出自哪段话？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0021",
+          "论语-69b3e2#419b729c#c0022",
+          "论语-69b3e2#419b729c#c0094",
+          "论语-69b3e2#419b729c#c0006",
+          "论语-69b3e2#419b729c#c0100",
+          "论语-69b3e2#419b729c#c0002",
+          "论语-69b3e2#419b729c#c0130",
+          "论语-69b3e2#419b729c#c0103",
+          "论语-69b3e2#419b729c#c0078",
+          "论语-69b3e2#419b729c#c0074"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0021"
+        ],
+        "top_rerank": 0.247671,
+        "latency_ms": 737.91,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-020",
+        "query_type": "identifier",
+        "query": "“不迁怒，不贰过”是在评价谁？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0028",
+          "论语-69b3e2#419b729c#c0090",
+          "论语-69b3e2#419b729c#c0103",
+          "论语-69b3e2#419b729c#c0094",
+          "论语-69b3e2#419b729c#c0036",
+          "论语-69b3e2#419b729c#c0108",
+          "论语-69b3e2#419b729c#c0124",
+          "论语-69b3e2#419b729c#c0095",
+          "论语-69b3e2#419b729c#c0107",
+          "论语-69b3e2#419b729c#c0133"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0028"
+        ],
+        "top_rerank": 0.199594,
+        "latency_ms": 736.54,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-021",
+        "query_type": "identifier",
+        "query": "“文质彬彬，然后君子”的完整句子是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0032",
+          "论语-69b3e2#419b729c#c0071",
+          "论语-69b3e2#419b729c#c0076",
+          "论语-69b3e2#419b729c#c0102",
+          "论语-69b3e2#419b729c#c0040",
+          "论语-69b3e2#419b729c#c0103",
+          "论语-69b3e2#419b729c#c0098",
+          "论语-69b3e2#419b729c#c0034",
+          "论语-69b3e2#419b729c#c0043",
+          "论语-69b3e2#419b729c#c0023"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0032"
+        ],
+        "top_rerank": 0.247441,
+        "latency_ms": 721.02,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-022",
+        "query_type": "identifier",
+        "query": "“知者乐水，仁者乐山”的完整句子是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0033",
+          "论语-69b3e2#419b729c#c0105",
+          "论语-69b3e2#419b729c#c0037",
+          "论语-69b3e2#419b729c#c0016",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0095",
+          "论语-69b3e2#419b729c#c0101",
+          "论语-69b3e2#419b729c#c0040",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0052"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0033"
+        ],
+        "top_rerank": 0.287555,
+        "latency_ms": 590.29,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-023",
+        "query_type": "identifier",
+        "query": "“欲速则不达”的下一句是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0082",
+          "论语-69b3e2#419b729c#c0098",
+          "论语-69b3e2#419b729c#c0079",
+          "论语-69b3e2#419b729c#c0074",
+          "论语-69b3e2#419b729c#c0073",
+          "论语-69b3e2#419b729c#c0112",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0022",
+          "论语-69b3e2#419b729c#c0036",
+          "论语-69b3e2#419b729c#c0101"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0082"
+        ],
+        "top_rerank": 0.177364,
+        "latency_ms": 939.93,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-024",
+        "query_type": "identifier",
+        "query": "“人无远虑，必有近忧”的完整句子是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0101",
+          "论语-69b3e2#419b729c#c0108",
+          "论语-69b3e2#419b729c#c0130",
+          "论语-69b3e2#419b729c#c0018",
+          "论语-69b3e2#419b729c#c0044",
+          "论语-69b3e2#419b729c#c0082",
+          "论语-69b3e2#419b729c#c0104",
+          "论语-69b3e2#419b729c#c0003",
+          "论语-69b3e2#419b729c#c0069",
+          "论语-69b3e2#419b729c#c0089"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0101"
+        ],
+        "top_rerank": 0.369793,
+        "latency_ms": 631.41,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-025",
+        "query_type": "multi_condition",
+        "query": "孔子在《学而》和《为政》中分别怎样谈“孝”？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0004",
+          "论语-69b3e2#419b729c#c0008",
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0018",
+          "论语-69b3e2#419b729c#c0002",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0058",
+          "论语-69b3e2#419b729c#c0005",
+          "论语-69b3e2#419b729c#c0007"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0004",
+          "论语-69b3e2#419b729c#c0005"
+        ],
+        "top_rerank": 0.240668,
+        "latency_ms": 586.77,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.8451850618939637
+      },
+      {
+        "id": "ly-026",
+        "query_type": "multi_condition",
+        "query": "孔子如何评价颜回的学习和生活状态？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0058",
+          "论语-69b3e2#419b729c#c0028",
+          "论语-69b3e2#419b729c#c0006",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0031",
+          "论语-69b3e2#419b729c#c0047",
+          "论语-69b3e2#419b729c#c0036",
+          "论语-69b3e2#419b729c#c0037"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0005",
+          "论语-69b3e2#419b729c#c0006",
+          "论语-69b3e2#419b729c#c0031"
+        ],
+        "top_rerank": 0.320783,
+        "latency_ms": 628.4,
+        "recall@10": 0.6666666666666666,
+        "hit@10": 1.0,
+        "mrr@10": 0.3333333333333333,
+        "ndcg@10": 0.39106560501896365
+      },
+      {
+        "id": "ly-027",
+        "query_type": "multi_condition",
+        "query": "孔子对子路和冉有问“闻斯行诸”的回答有何不同？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0062",
+          "论语-69b3e2#419b729c#c0023",
+          "论语-69b3e2#419b729c#c0037",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0081",
+          "论语-69b3e2#419b729c#c0125",
+          "论语-69b3e2#419b729c#c0060",
+          "论语-69b3e2#419b729c#c0029",
+          "论语-69b3e2#419b729c#c0064"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0062",
+          "论语-69b3e2#419b729c#c0063"
+        ],
+        "top_rerank": 0.763637,
+        "latency_ms": 704.03,
+        "recall@10": 0.5,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      {
+        "id": "ly-028",
+        "query_type": "multi_condition",
+        "query": "孔子认为君子和小人在待人接物上有哪些不同？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0085",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0072",
+          "论语-69b3e2#419b729c#c0105",
+          "论语-69b3e2#419b729c#c0084",
+          "论语-69b3e2#419b729c#c0102",
+          "论语-69b3e2#419b729c#c0122",
+          "论语-69b3e2#419b729c#c0093",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0088"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0006",
+          "论语-69b3e2#419b729c#c0041",
+          "论语-69b3e2#419b729c#c0084"
+        ],
+        "top_rerank": 0.276318,
+        "latency_ms": 707.63,
+        "recall@10": 0.3333333333333333,
+        "hit@10": 1.0,
+        "mrr@10": 0.2,
+        "ndcg@10": 0.18154179253735267
+      },
+      {
+        "id": "ly-029",
+        "query_type": "multi_condition",
+        "query": "孔子在《泰伯》中如何谈读书人的责任与道路？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0042",
+          "论语-69b3e2#419b729c#c0064",
+          "论语-69b3e2#419b729c#c0096",
+          "论语-69b3e2#419b729c#c0038",
+          "论语-69b3e2#419b729c#c0100",
+          "论语-69b3e2#419b729c#c0037",
+          "论语-69b3e2#419b729c#c0107",
+          "论语-69b3e2#419b729c#c0104",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0093"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0043"
+        ],
+        "top_rerank": 0.175052,
+        "latency_ms": 674.54,
+        "recall@10": 0.0,
+        "hit@10": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      {
+        "id": "ly-030",
+        "query_type": "multi_condition",
+        "query": "孔子如何描述自己学习、教学和做人的态度？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0093",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0038",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0104",
+          "论语-69b3e2#419b729c#c0058"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0035",
+          "论语-69b3e2#419b729c#c0038"
+        ],
+        "top_rerank": 0.182488,
+        "latency_ms": 634.23,
+        "recall@10": 0.5,
+        "hit@10": 1.0,
+        "mrr@10": 0.14285714285714285,
+        "ndcg@10": 0.20438239758848611
+      },
+      {
+        "id": "ly-031",
+        "query_type": "multi_condition",
+        "query": "孔子认为有益的三种朋友和有害的三种朋友分别是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0086",
+          "论语-69b3e2#419b729c#c0101",
+          "论语-69b3e2#419b729c#c0008",
+          "论语-69b3e2#419b729c#c0123",
+          "论语-69b3e2#419b729c#c0037"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0109"
+        ],
+        "top_rerank": 0.299157,
+        "latency_ms": 684.51,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-032",
+        "query_type": "multi_condition",
+        "query": "孔子认为君子有哪三种戒律？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0105",
+          "论语-69b3e2#419b729c#c0072",
+          "论语-69b3e2#419b729c#c0093",
+          "论语-69b3e2#419b729c#c0094",
+          "论语-69b3e2#419b729c#c0137",
+          "论语-69b3e2#419b729c#c0103",
+          "论语-69b3e2#419b729c#c0122",
+          "论语-69b3e2#419b729c#c0130"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0110"
+        ],
+        "top_rerank": 0.68779,
+        "latency_ms": 831.54,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-033",
+        "query_type": "multi_hop",
+        "query": "从《学而》和《卫灵公》看孔子对“言”与“行”的要求",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0092",
+          "论语-69b3e2#419b729c#c0100",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0139",
+          "论语-69b3e2#419b729c#c0141",
+          "论语-69b3e2#419b729c#c0038",
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0039"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0003",
+          "论语-69b3e2#419b729c#c0094"
+        ],
+        "top_rerank": 0.199359,
+        "latency_ms": 755.02,
+        "recall@10": 0.0,
+        "hit@10": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      {
+        "id": "ly-034",
+        "query_type": "multi_hop",
+        "query": "孔子在《里仁》和《述而》中分别怎样谈富贵？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0015",
+          "论语-69b3e2#419b729c#c0037",
+          "论语-69b3e2#419b729c#c0139",
+          "论语-69b3e2#419b729c#c0141",
+          "论语-69b3e2#419b729c#c0088",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0035",
+          "论语-69b3e2#419b729c#c0089",
+          "论语-69b3e2#419b729c#c0119",
+          "论语-69b3e2#419b729c#c0082"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0015",
+          "论语-69b3e2#419b729c#c0037"
+        ],
+        "top_rerank": 0.183928,
+        "latency_ms": 694.84,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "ly-035",
+        "query_type": "multi_hop",
+        "query": "《为政》和《卫灵公》中关于“知”的论述",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0004",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0092",
+          "论语-69b3e2#419b729c#c0008",
+          "论语-69b3e2#419b729c#c0077",
+          "论语-69b3e2#419b729c#c0139",
+          "论语-69b3e2#419b729c#c0141",
+          "论语-69b3e2#419b729c#c0100",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0000"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0100"
+        ],
+        "top_rerank": 0.19531,
+        "latency_ms": 730.08,
+        "recall@10": 0.5,
+        "hit@10": 1.0,
+        "mrr@10": 0.125,
+        "ndcg@10": 0.19342640361727081
+      },
+      {
+        "id": "ly-036",
+        "query_type": "multi_hop",
+        "query": "孔子在《雍也》和《颜渊》中如何谈“仁”？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0068",
+          "论语-69b3e2#419b729c#c0101",
+          "论语-69b3e2#419b729c#c0033",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0016",
+          "论语-69b3e2#419b729c#c0034",
+          "论语-69b3e2#419b729c#c0087",
+          "论语-69b3e2#419b729c#c0019",
+          "论语-69b3e2#419b729c#c0037"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0033",
+          "论语-69b3e2#419b729c#c0068"
+        ],
+        "top_rerank": 0.374421,
+        "latency_ms": 669.1,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.9197207891481876
+      },
+      {
+        "id": "ly-037",
+        "query_type": "multi_hop",
+        "query": "《学而》与《颜渊》中对“信”的论述",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0131",
+          "论语-69b3e2#419b729c#c0139",
+          "论语-69b3e2#419b729c#c0141",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0003",
+          "论语-69b3e2#419b729c#c0035",
+          "论语-69b3e2#419b729c#c0100",
+          "论语-69b3e2#419b729c#c0051",
+          "论语-69b3e2#419b729c#c0026"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0070"
+        ],
+        "top_rerank": 0.188413,
+        "latency_ms": 636.57,
+        "recall@10": 0.5,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.6131471927654584
+      },
+      {
+        "id": "ly-038",
+        "query_type": "multi_hop",
+        "query": "孔子在《述而》和《子罕》中如何谈自己的学习状态？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0035",
+          "论语-69b3e2#419b729c#c0027",
+          "论语-69b3e2#419b729c#c0047",
+          "论语-69b3e2#419b729c#c0139",
+          "论语-69b3e2#419b729c#c0141",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0064"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0038",
+          "论语-69b3e2#419b729c#c0045"
+        ],
+        "top_rerank": 0.186239,
+        "latency_ms": 916.34,
+        "recall@10": 0.0,
+        "hit@10": 0.0,
+        "mrr@10": 0.0,
+        "ndcg@10": 0.0
+      },
+      {
+        "id": "ly-039",
+        "query_type": "multi_hop",
+        "query": "《为政》与《子路》中关于“政”的论述",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0077",
+          "论语-69b3e2#419b729c#c0004",
+          "论语-69b3e2#419b729c#c0072",
+          "论语-69b3e2#419b729c#c0008",
+          "论语-69b3e2#419b729c#c0030",
+          "论语-69b3e2#419b729c#c0073",
+          "论语-69b3e2#419b729c#c0139",
+          "论语-69b3e2#419b729c#c0141",
+          "论语-69b3e2#419b729c#c0124",
+          "论语-69b3e2#419b729c#c0094"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0004",
+          "论语-69b3e2#419b729c#c0079"
+        ],
+        "top_rerank": 0.262734,
+        "latency_ms": 578.63,
+        "recall@10": 0.5,
+        "hit@10": 1.0,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.38685280723454163
+      },
+      {
+        "id": "ly-040",
+        "query_type": "multi_hop",
+        "query": "《里仁》与《卫灵公》中关于“君子”与“小人”的对比",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0015",
+          "论语-69b3e2#419b729c#c0105",
+          "论语-69b3e2#419b729c#c0006",
+          "论语-69b3e2#419b729c#c0016",
+          "论语-69b3e2#419b729c#c0088",
+          "论语-69b3e2#419b729c#c0122",
+          "论语-69b3e2#419b729c#c0102",
+          "论语-69b3e2#419b729c#c0072",
+          "论语-69b3e2#419b729c#c0139"
+        ],
+        "relevant": [
+          "论语-69b3e2#419b729c#c0017",
+          "论语-69b3e2#419b729c#c0102"
+        ],
+        "top_rerank": 0.195369,
+        "latency_ms": 590.13,
+        "recall@10": 0.5,
+        "hit@10": 1.0,
+        "mrr@10": 0.125,
+        "ndcg@10": 0.19342640361727081
+      },
+      {
+        "id": "ly-041",
+        "query_type": "unanswerable",
+        "query": "《论语》中孔子如何看待量子计算机？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0138",
+          "论语-69b3e2#419b729c#c0140",
+          "论语-69b3e2#419b729c#c0047",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0028",
+          "论语-69b3e2#419b729c#c0082",
+          "论语-69b3e2#419b729c#c0099"
+        ],
+        "relevant": [],
+        "top_rerank": 0.154653,
+        "latency_ms": 615.38
+      },
+      {
+        "id": "ly-042",
+        "query_type": "unanswerable",
+        "query": "《论语》中是否提到电磁感应现象？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0138",
+          "论语-69b3e2#419b729c#c0140",
+          "论语-69b3e2#419b729c#c0033",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0000",
+          "论语-69b3e2#419b729c#c0028",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0035",
+          "论语-69b3e2#419b729c#c0011"
+        ],
+        "relevant": [],
+        "top_rerank": 0.167619,
+        "latency_ms": 956.74
+      },
+      {
+        "id": "ly-043",
+        "query_type": "unanswerable",
+        "query": "孔子在《论语》中如何评价秦始皇？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0045",
+          "论语-69b3e2#419b729c#c0081",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0107",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0082",
+          "论语-69b3e2#419b729c#c0047",
+          "论语-69b3e2#419b729c#c0123",
+          "论语-69b3e2#419b729c#c0037",
+          "论语-69b3e2#419b729c#c0111"
+        ],
+        "relevant": [],
+        "top_rerank": 0.171416,
+        "latency_ms": 753.27
+      },
+      {
+        "id": "ly-044",
+        "query_type": "unanswerable",
+        "query": "《论语》中记载了孔子对蒸汽机的看法吗？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0138",
+          "论语-69b3e2#419b729c#c0140",
+          "论语-69b3e2#419b729c#c0085",
+          "论语-69b3e2#419b729c#c0045",
+          "论语-69b3e2#419b729c#c0081",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0073",
+          "论语-69b3e2#419b729c#c0105",
+          "论语-69b3e2#419b729c#c0007",
+          "论语-69b3e2#419b729c#c0011"
+        ],
+        "relevant": [],
+        "top_rerank": 0.162751,
+        "latency_ms": 724.81
+      },
+      {
+        "id": "ly-045",
+        "query_type": "unanswerable",
+        "query": "孔子是否在《论语》中讨论过股票投资？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0138",
+          "论语-69b3e2#419b729c#c0140",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0082",
+          "论语-69b3e2#419b729c#c0088",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0073",
+          "论语-69b3e2#419b729c#c0107",
+          "论语-69b3e2#419b729c#c0124"
+        ],
+        "relevant": [],
+        "top_rerank": 0.155909,
+        "latency_ms": 1410.89
+      },
+      {
+        "id": "ly-046",
+        "query_type": "unanswerable",
+        "query": "《论语》中孔子有没有提到互联网？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0138",
+          "论语-69b3e2#419b729c#c0140",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0110",
+          "论语-69b3e2#419b729c#c0107",
+          "论语-69b3e2#419b729c#c0116",
+          "论语-69b3e2#419b729c#c0073",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0082",
+          "论语-69b3e2#419b729c#c0099"
+        ],
+        "relevant": [],
+        "top_rerank": 0.155575,
+        "latency_ms": 601.87
+      },
+      {
+        "id": "ly-047",
+        "query_type": "unanswerable",
+        "query": "孔子在《论语》中是否描述过地球绕太阳运动？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0138",
+          "论语-69b3e2#419b729c#c0140",
+          "论语-69b3e2#419b729c#c0114",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0045",
+          "论语-69b3e2#419b729c#c0107",
+          "论语-69b3e2#419b729c#c0039",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0082",
+          "论语-69b3e2#419b729c#c0047"
+        ],
+        "relevant": [],
+        "top_rerank": 0.160774,
+        "latency_ms": 669.56
+      },
+      {
+        "id": "ly-048",
+        "query_type": "unanswerable",
+        "query": "《论语》中是否记载了孔子与苏格拉底的对话？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0138",
+          "论语-69b3e2#419b729c#c0140",
+          "论语-69b3e2#419b729c#c0125",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0093",
+          "论语-69b3e2#419b729c#c0103",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0115",
+          "论语-69b3e2#419b729c#c0033"
+        ],
+        "relevant": [],
+        "top_rerank": 0.164715,
+        "latency_ms": 653.7
+      },
+      {
+        "id": "ly-049",
+        "query_type": "unanswerable",
+        "query": "孔子在《论语》中是否提出过微积分？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0123",
+          "论语-69b3e2#419b729c#c0138",
+          "论语-69b3e2#419b729c#c0140",
+          "论语-69b3e2#419b729c#c0027",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0093",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0039",
+          "论语-69b3e2#419b729c#c0099",
+          "论语-69b3e2#419b729c#c0037"
+        ],
+        "relevant": [],
+        "top_rerank": 0.160332,
+        "latency_ms": 651.2
+      },
+      {
+        "id": "ly-050",
+        "query_type": "unanswerable",
+        "query": "《论语》中是否有关于新冠病毒的记载？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "论语-69b3e2#419b729c#c0138",
+          "论语-69b3e2#419b729c#c0140",
+          "论语-69b3e2#419b729c#c0109",
+          "论语-69b3e2#419b729c#c0001",
+          "论语-69b3e2#419b729c#c0111",
+          "论语-69b3e2#419b729c#c0119",
+          "论语-69b3e2#419b729c#c0118",
+          "论语-69b3e2#419b729c#c0011",
+          "论语-69b3e2#419b729c#c0034",
+          "论语-69b3e2#419b729c#c0023"
+        ],
+        "relevant": [],
+        "top_rerank": 0.172066,
+        "latency_ms": 653.11
+      },
+      {
+        "id": "rq-001",
+        "query_type": "semantic",
+        "query": "如何防止检索到的文档里藏有恶意指令？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "degraded",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0054",
+          "rag_requirements-24e1ba#9e8af988#c0077",
+          "rag_requirements-24e1ba#9e8af988#c0041",
+          "rag_requirements-24e1ba#9e8af988#c0055",
+          "rag_requirements-24e1ba#9e8af988#c0017",
+          "rag_requirements-24e1ba#9e8af988#c0005",
+          "rag_requirements-24e1ba#9e8af988#c0014",
+          "rag_requirements-24e1ba#9e8af988#c0018",
+          "rag_requirements-24e1ba#9e8af988#c0086",
+          "rag_requirements-24e1ba#9e8af988#c0072"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0054"
+        ],
+        "top_rerank": 0.18413,
+        "latency_ms": 1825.96,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "rq-002",
+        "query_type": "semantic",
+        "query": "为什么召回阶段比精排更重要？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0016",
+          "rag_requirements-24e1ba#9e8af988#c0011",
+          "rag_requirements-24e1ba#9e8af988#c0008",
+          "rag_requirements-24e1ba#9e8af988#c0013",
+          "rag_requirements-24e1ba#9e8af988#c0030",
+          "rag_requirements-24e1ba#9e8af988#c0087",
+          "rag_requirements-24e1ba#9e8af988#c0006",
+          "rag_requirements-24e1ba#9e8af988#c0035",
+          "rag_requirements-24e1ba#9e8af988#c0022",
+          "rag_requirements-24e1ba#9e8af988#c0083"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0013"
+        ],
+        "top_rerank": 0.188293,
+        "latency_ms": 716.94,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 0.25,
+        "ndcg@10": 0.43067655807339306
+      },
+      {
+        "id": "rq-003",
+        "query_type": "semantic",
+        "query": "评估 RAG 时为什么要分检索侧和生成侧？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0013",
+          "rag_requirements-24e1ba#9e8af988#c0003",
+          "rag_requirements-24e1ba#9e8af988#c0033",
+          "rag_requirements-24e1ba#9e8af988#c0014",
+          "rag_requirements-24e1ba#9e8af988#c0039",
+          "rag_requirements-24e1ba#9e8af988#c0001",
+          "rag_requirements-24e1ba#9e8af988#c0004",
+          "rag_requirements-24e1ba#9e8af988#c0067",
+          "rag_requirements-24e1ba#9e8af988#c0037",
+          "rag_requirements-24e1ba#9e8af988#c0085"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0013",
+          "rag_requirements-24e1ba#9e8af988#c0014",
+          "rag_requirements-24e1ba#9e8af988#c0033"
+        ],
+        "top_rerank": 0.763637,
+        "latency_ms": 759.04,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.9060254355346823
+      },
+      {
+        "id": "rq-004",
+        "query_type": "semantic",
+        "query": "为什么要使用父子分块？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0006",
+          "rag_requirements-24e1ba#9e8af988#c0007",
+          "rag_requirements-24e1ba#9e8af988#c0092",
+          "rag_requirements-24e1ba#9e8af988#c0060",
+          "rag_requirements-24e1ba#9e8af988#c0011",
+          "rag_requirements-24e1ba#9e8af988#c0026",
+          "rag_requirements-24e1ba#9e8af988#c0035",
+          "rag_requirements-24e1ba#9e8af988#c0059",
+          "rag_requirements-24e1ba#9e8af988#c0064",
+          "rag_requirements-24e1ba#9e8af988#c0033"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0006",
+          "rag_requirements-24e1ba#9e8af988#c0007",
+          "rag_requirements-24e1ba#9e8af988#c0011",
+          "rag_requirements-24e1ba#9e8af988#c0033",
+          "rag_requirements-24e1ba#9e8af988#c0058",
+          "rag_requirements-24e1ba#9e8af988#c0059",
+          "rag_requirements-24e1ba#9e8af988#c0064",
+          "rag_requirements-24e1ba#9e8af988#c0081",
+          "rag_requirements-24e1ba#9e8af988#c0084",
+          "rag_requirements-24e1ba#9e8af988#c0092"
+        ],
+        "top_rerank": 0.403222,
+        "latency_ms": 607.15,
+        "recall@10": 0.7,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.7534494445524138
+      },
+      {
+        "id": "rq-005",
+        "query_type": "semantic",
+        "query": "缓存键为什么必须包含 scope_tags 和 index_version？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0072",
+          "rag_requirements-24e1ba#9e8af988#c0018",
+          "rag_requirements-24e1ba#9e8af988#c0086",
+          "rag_requirements-24e1ba#9e8af988#c0092",
+          "rag_requirements-24e1ba#9e8af988#c0017",
+          "rag_requirements-24e1ba#9e8af988#c0025",
+          "rag_requirements-24e1ba#9e8af988#c0007",
+          "rag_requirements-24e1ba#9e8af988#c0061",
+          "rag_requirements-24e1ba#9e8af988#c0093",
+          "rag_requirements-24e1ba#9e8af988#c0050"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0072"
+        ],
+        "top_rerank": 0.58877,
+        "latency_ms": 611.33,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "rq-006",
+        "query_type": "semantic",
+        "query": "生产期推荐的可观测方案是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0088",
+          "rag_requirements-24e1ba#9e8af988#c0085",
+          "rag_requirements-24e1ba#9e8af988#c0016",
+          "rag_requirements-24e1ba#9e8af988#c0073",
+          "rag_requirements-24e1ba#9e8af988#c0033",
+          "rag_requirements-24e1ba#9e8af988#c0029",
+          "rag_requirements-24e1ba#9e8af988#c0031",
+          "rag_requirements-24e1ba#9e8af988#c0087",
+          "rag_requirements-24e1ba#9e8af988#c0079",
+          "rag_requirements-24e1ba#9e8af988#c0094"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0085",
+          "rag_requirements-24e1ba#9e8af988#c0088",
+          "rag_requirements-24e1ba#9e8af988#c0091"
+        ],
+        "top_rerank": 0.157308,
+        "latency_ms": 659.66,
+        "recall@10": 0.6666666666666666,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.7653606369886217
+      },
+      {
+        "id": "rq-007",
+        "query_type": "semantic",
+        "query": "什么时候应该从 Chroma 切换到 Qdrant？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0081",
+          "rag_requirements-24e1ba#9e8af988#c0089",
+          "rag_requirements-24e1ba#9e8af988#c0034",
+          "rag_requirements-24e1ba#9e8af988#c0088",
+          "rag_requirements-24e1ba#9e8af988#c0092",
+          "rag_requirements-24e1ba#9e8af988#c0091",
+          "rag_requirements-24e1ba#9e8af988#c0079",
+          "rag_requirements-24e1ba#9e8af988#c0027",
+          "rag_requirements-24e1ba#9e8af988#c0032",
+          "rag_requirements-24e1ba#9e8af988#c0090"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0034",
+          "rag_requirements-24e1ba#9e8af988#c0079",
+          "rag_requirements-24e1ba#9e8af988#c0081",
+          "rag_requirements-24e1ba#9e8af988#c0082",
+          "rag_requirements-24e1ba#9e8af988#c0087",
+          "rag_requirements-24e1ba#9e8af988#c0089",
+          "rag_requirements-24e1ba#9e8af988#c0090",
+          "rag_requirements-24e1ba#9e8af988#c0092"
+        ],
+        "top_rerank": 0.190629,
+        "latency_ms": 714.56,
+        "recall@10": 0.75,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.7942857986113383
+      },
+      {
+        "id": "rq-008",
+        "query_type": "semantic",
+        "query": "为什么 rank_bm25 只适合验证阶段？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0082",
+          "rag_requirements-24e1ba#9e8af988#c0090",
+          "rag_requirements-24e1ba#9e8af988#c0032",
+          "rag_requirements-24e1ba#9e8af988#c0087",
+          "rag_requirements-24e1ba#9e8af988#c0034",
+          "rag_requirements-24e1ba#9e8af988#c0010",
+          "rag_requirements-24e1ba#9e8af988#c0035",
+          "rag_requirements-24e1ba#9e8af988#c0017",
+          "rag_requirements-24e1ba#9e8af988#c0083",
+          "rag_requirements-24e1ba#9e8af988#c0006"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0032",
+          "rag_requirements-24e1ba#9e8af988#c0082",
+          "rag_requirements-24e1ba#9e8af988#c0087",
+          "rag_requirements-24e1ba#9e8af988#c0090"
+        ],
+        "top_rerank": 0.831618,
+        "latency_ms": 725.12,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "rq-009",
+        "query_type": "semantic",
+        "query": "如何判断 LLM-as-judge 是否可用？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0068",
+          "rag_requirements-24e1ba#9e8af988#c0085",
+          "rag_requirements-24e1ba#9e8af988#c0057",
+          "rag_requirements-24e1ba#9e8af988#c0055",
+          "rag_requirements-24e1ba#9e8af988#c0020",
+          "rag_requirements-24e1ba#9e8af988#c0012",
+          "rag_requirements-24e1ba#9e8af988#c0091",
+          "rag_requirements-24e1ba#9e8af988#c0051",
+          "rag_requirements-24e1ba#9e8af988#c0014",
+          "rag_requirements-24e1ba#9e8af988#c0003"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0068"
+        ],
+        "top_rerank": 0.434222,
+        "latency_ms": 657.97,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "rq-010",
+        "query_type": "semantic",
+        "query": "证据不足时子 Agent 应该返回什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0037",
+          "rag_requirements-24e1ba#9e8af988#c0012",
+          "rag_requirements-24e1ba#9e8af988#c0003",
+          "rag_requirements-24e1ba#9e8af988#c0035",
+          "rag_requirements-24e1ba#9e8af988#c0048",
+          "rag_requirements-24e1ba#9e8af988#c0001",
+          "rag_requirements-24e1ba#9e8af988#c0030",
+          "rag_requirements-24e1ba#9e8af988#c0041",
+          "rag_requirements-24e1ba#9e8af988#c0069",
+          "rag_requirements-24e1ba#9e8af988#c0073"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0043",
+          "rag_requirements-24e1ba#9e8af988#c0048",
+          "rag_requirements-24e1ba#9e8af988#c0052",
+          "rag_requirements-24e1ba#9e8af988#c0093"
+        ],
+        "top_rerank": 0.363665,
+        "latency_ms": 661.33,
+        "recall@10": 0.25,
+        "hit@10": 1.0,
+        "mrr@10": 0.2,
+        "ndcg@10": 0.15101961822780524
+      },
+      {
+        "id": "rq-011",
+        "query_type": "identifier",
+        "query": "contract_version 字段的作用是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0043",
+          "rag_requirements-24e1ba#9e8af988#c0050",
+          "rag_requirements-24e1ba#9e8af988#c0093",
+          "rag_requirements-24e1ba#9e8af988#c0061",
+          "rag_requirements-24e1ba#9e8af988#c0020",
+          "rag_requirements-24e1ba#9e8af988#c0059",
+          "rag_requirements-24e1ba#9e8af988#c0007",
+          "rag_requirements-24e1ba#9e8af988#c0076",
+          "rag_requirements-24e1ba#9e8af988#c0041",
+          "rag_requirements-24e1ba#9e8af988#c0092"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0043",
+          "rag_requirements-24e1ba#9e8af988#c0050",
+          "rag_requirements-24e1ba#9e8af988#c0093"
+        ],
+        "top_rerank": 0.177992,
+        "latency_ms": 595.2,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "rq-012",
+        "query_type": "identifier",
+        "query": "DENIED 状态的语义是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0049",
+          "rag_requirements-24e1ba#9e8af988#c0048",
+          "rag_requirements-24e1ba#9e8af988#c0043",
+          "rag_requirements-24e1ba#9e8af988#c0052",
+          "rag_requirements-24e1ba#9e8af988#c0009",
+          "rag_requirements-24e1ba#9e8af988#c0059",
+          "rag_requirements-24e1ba#9e8af988#c0041",
+          "rag_requirements-24e1ba#9e8af988#c0050",
+          "rag_requirements-24e1ba#9e8af988#c0066",
+          "rag_requirements-24e1ba#9e8af988#c0076"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0043",
+          "rag_requirements-24e1ba#9e8af988#c0049",
+          "rag_requirements-24e1ba#9e8af988#c0052"
+        ],
+        "top_rerank": 0.153773,
+        "latency_ms": 591.6,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.9060254355346823
+      },
+      {
+        "id": "rq-013",
+        "query_type": "identifier",
+        "query": "INDEX_STALE 应该如何处理？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0044",
+          "rag_requirements-24e1ba#9e8af988#c0052",
+          "rag_requirements-24e1ba#9e8af988#c0061",
+          "rag_requirements-24e1ba#9e8af988#c0072",
+          "rag_requirements-24e1ba#9e8af988#c0050",
+          "rag_requirements-24e1ba#9e8af988#c0093",
+          "rag_requirements-24e1ba#9e8af988#c0064",
+          "rag_requirements-24e1ba#9e8af988#c0051",
+          "rag_requirements-24e1ba#9e8af988#c0074",
+          "rag_requirements-24e1ba#9e8af988#c0017"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0044",
+          "rag_requirements-24e1ba#9e8af988#c0052"
+        ],
+        "top_rerank": 0.225662,
+        "latency_ms": 597.56,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "rq-014",
+        "query_type": "identifier",
+        "query": "RRF(k=60) 的作用是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0010",
+          "rag_requirements-24e1ba#9e8af988#c0022",
+          "rag_requirements-24e1ba#9e8af988#c0016",
+          "rag_requirements-24e1ba#9e8af988#c0035",
+          "rag_requirements-24e1ba#9e8af988#c0008",
+          "rag_requirements-24e1ba#9e8af988#c0067",
+          "rag_requirements-24e1ba#9e8af988#c0038",
+          "rag_requirements-24e1ba#9e8af988#c0002",
+          "rag_requirements-24e1ba#9e8af988#c0086",
+          "rag_requirements-24e1ba#9e8af988#c0034"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0010",
+          "rag_requirements-24e1ba#9e8af988#c0015",
+          "rag_requirements-24e1ba#9e8af988#c0016",
+          "rag_requirements-24e1ba#9e8af988#c0017",
+          "rag_requirements-24e1ba#9e8af988#c0030"
+        ],
+        "top_rerank": 0.314197,
+        "latency_ms": 564.01,
+        "recall@10": 0.4,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.5087403079104241
+      },
+      {
+        "id": "rq-015",
+        "query_type": "identifier",
+        "query": "parent_id 字段的用途是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0060",
+          "rag_requirements-24e1ba#9e8af988#c0059",
+          "rag_requirements-24e1ba#9e8af988#c0033",
+          "rag_requirements-24e1ba#9e8af988#c0011",
+          "rag_requirements-24e1ba#9e8af988#c0025",
+          "rag_requirements-24e1ba#9e8af988#c0036",
+          "rag_requirements-24e1ba#9e8af988#c0007",
+          "rag_requirements-24e1ba#9e8af988#c0026",
+          "rag_requirements-24e1ba#9e8af988#c0076",
+          "rag_requirements-24e1ba#9e8af988#c0021"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0007",
+          "rag_requirements-24e1ba#9e8af988#c0008",
+          "rag_requirements-24e1ba#9e8af988#c0011",
+          "rag_requirements-24e1ba#9e8af988#c0033",
+          "rag_requirements-24e1ba#9e8af988#c0035",
+          "rag_requirements-24e1ba#9e8af988#c0036",
+          "rag_requirements-24e1ba#9e8af988#c0045",
+          "rag_requirements-24e1ba#9e8af988#c0059"
+        ],
+        "top_rerank": 0.397481,
+        "latency_ms": 521.71,
+        "recall@10": 0.625,
+        "hit@10": 1.0,
+        "mrr@10": 0.5,
+        "ndcg@10": 0.5694111640347342
+      },
+      {
+        "id": "rq-016",
+        "query_type": "identifier",
+        "query": "scope_tags 为什么要前置过滤？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0017",
+          "rag_requirements-24e1ba#9e8af988#c0037",
+          "rag_requirements-24e1ba#9e8af988#c0036",
+          "rag_requirements-24e1ba#9e8af988#c0018",
+          "rag_requirements-24e1ba#9e8af988#c0060",
+          "rag_requirements-24e1ba#9e8af988#c0072",
+          "rag_requirements-24e1ba#9e8af988#c0002",
+          "rag_requirements-24e1ba#9e8af988#c0055",
+          "rag_requirements-24e1ba#9e8af988#c0057",
+          "rag_requirements-24e1ba#9e8af988#c0034"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0057"
+        ],
+        "top_rerank": 0.586853,
+        "latency_ms": 673.4,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 0.1111111111111111,
+        "ndcg@10": 0.3010299956639812
+      },
+      {
+        "id": "rq-017",
+        "query_type": "identifier",
+        "query": "超时预算示例中 rerank 的预算是多少毫秒？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0053",
+          "rag_requirements-24e1ba#9e8af988#c0070",
+          "rag_requirements-24e1ba#9e8af988#c0074",
+          "rag_requirements-24e1ba#9e8af988#c0046",
+          "rag_requirements-24e1ba#9e8af988#c0047",
+          "rag_requirements-24e1ba#9e8af988#c0051",
+          "rag_requirements-24e1ba#9e8af988#c0083",
+          "rag_requirements-24e1ba#9e8af988#c0048",
+          "rag_requirements-24e1ba#9e8af988#c0087",
+          "rag_requirements-24e1ba#9e8af988#c0071"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0053"
+        ],
+        "top_rerank": 0.532587,
+        "latency_ms": 675.86,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 1.0
+      },
+      {
+        "id": "rq-018",
+        "query_type": "multi_condition",
+        "query": "验证期与生产期的向量库、稀疏检索、精排组合分别是什么？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0087",
+          "rag_requirements-24e1ba#9e8af988#c0032",
+          "rag_requirements-24e1ba#9e8af988#c0081",
+          "rag_requirements-24e1ba#9e8af988#c0034",
+          "rag_requirements-24e1ba#9e8af988#c0091",
+          "rag_requirements-24e1ba#9e8af988#c0088",
+          "rag_requirements-24e1ba#9e8af988#c0080",
+          "rag_requirements-24e1ba#9e8af988#c0083",
+          "rag_requirements-24e1ba#9e8af988#c0035",
+          "rag_requirements-24e1ba#9e8af988#c0016"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0011",
+          "rag_requirements-24e1ba#9e8af988#c0032",
+          "rag_requirements-24e1ba#9e8af988#c0034",
+          "rag_requirements-24e1ba#9e8af988#c0079",
+          "rag_requirements-24e1ba#9e8af988#c0081",
+          "rag_requirements-24e1ba#9e8af988#c0082",
+          "rag_requirements-24e1ba#9e8af988#c0083",
+          "rag_requirements-24e1ba#9e8af988#c0087",
+          "rag_requirements-24e1ba#9e8af988#c0088",
+          "rag_requirements-24e1ba#9e8af988#c0089",
+          "rag_requirements-24e1ba#9e8af988#c0090",
+          "rag_requirements-24e1ba#9e8af988#c0092"
+        ],
+        "top_rerank": 0.196158,
+        "latency_ms": 602.65,
+        "recall@10": 0.5,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.7116179486056782
+      },
+      {
+        "id": "rq-019",
+        "query_type": "multi_condition",
+        "query": "契约响应必须包含哪些公共字段？",
+        "answerable": true,
+        "predicted_answerable": true,
+        "status": "ok",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0093",
+          "rag_requirements-24e1ba#9e8af988#c0041",
+          "rag_requirements-24e1ba#9e8af988#c0050",
+          "rag_requirements-24e1ba#9e8af988#c0020",
+          "rag_requirements-24e1ba#9e8af988#c0043",
+          "rag_requirements-24e1ba#9e8af988#c0002",
+          "rag_requirements-24e1ba#9e8af988#c0075",
+          "rag_requirements-24e1ba#9e8af988#c0089",
+          "rag_requirements-24e1ba#9e8af988#c0076",
+          "rag_requirements-24e1ba#9e8af988#c0000"
+        ],
+        "relevant": [
+          "rag_requirements-24e1ba#9e8af988#c0050",
+          "rag_requirements-24e1ba#9e8af988#c0093"
+        ],
+        "top_rerank": 0.189232,
+        "latency_ms": 630.07,
+        "recall@10": 1.0,
+        "hit@10": 1.0,
+        "mrr@10": 1.0,
+        "ndcg@10": 0.9197207891481876
+      },
+      {
+        "id": "rq-020",
+        "query_type": "unanswerable",
+        "query": "项目在 Milvus 上的 QPS 压测结果是多少？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0081",
+          "rag_requirements-24e1ba#9e8af988#c0027",
+          "rag_requirements-24e1ba#9e8af988#c0088",
+          "rag_requirements-24e1ba#9e8af988#c0091",
+          "rag_requirements-24e1ba#9e8af988#c0032",
+          "rag_requirements-24e1ba#9e8af988#c0071",
+          "rag_requirements-24e1ba#9e8af988#c0083",
+          "rag_requirements-24e1ba#9e8af988#c0034",
+          "rag_requirements-24e1ba#9e8af988#c0039",
+          "rag_requirements-24e1ba#9e8af988#c0089"
+        ],
+        "relevant": [],
+        "top_rerank": 0.173057,
+        "latency_ms": 637.67
+      },
+      {
+        "id": "rq-021",
+        "query_type": "unanswerable",
+        "query": "这份文档有没有给出 GPU 型号和显存配置？",
+        "answerable": false,
+        "predicted_answerable": false,
+        "status": "no_evidence",
+        "retrieved": [
+          "rag_requirements-24e1ba#9e8af988#c0080",
+          "rag_requirements-24e1ba#9e8af988#c0091",
+          "rag_requirements-24e1ba#9e8af988#c0070",
+          "rag_requirements-24e1ba#9e8af988#c0088",
+          "rag_requirements-24e1ba#9e8af988#c0089",
+          "rag_requirements-24e1ba#9e8af988#c0031",
+          "rag_requirements-24e1ba#9e8af988#c0006",
+          "rag_requirements-24e1ba#9e8af988#c0007",
+          "rag_requirements-24e1ba#9e8af988#c0059",
+          "rag_requirements-24e1ba#9e8af988#c0068"
+        ],
+        "relevant": [],
+        "top_rerank": 0.13824,
+        "latency_ms": 621.35
+      }
+    ],
+    "degraded_ratio": 0.0,
+    "rerank_degraded_count": 0
+  }
+}

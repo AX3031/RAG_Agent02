@@ -1,3 +1,30 @@
 chat_model_name: qwen3.5-flash
 backup_chat_model_name: glm-5
 embedding_model_name: text-embedding-v4
+rerank_model_name: gte-rerank-v2
+
+# 检索子 Agent 的运行参数（阶段 2/3）
+retrieval:
+  dense_k: 15              # Dense 路候选数
+  sparse_k: 15             # BM25 路候选数
+  rrf_k: 60                # RRF 常数，零配置稳健默认值
+  rerank_top_n: 5          # 精排后保留条数
+  final_top_n: 5           # 最终证据条数
+  answerability_threshold: 0.35   # threshold 模式下的 rerank 分数阈值
+  answerability_mode: llm          # llm=LLM 判定 + 阈值兜底；threshold=仅阈值
+  answerability_model_name: qwen-flash
+  answerability_timeout_ms: 5000
+  answerability_fallback_threshold: 0.35
+  answerability_high_threshold: 0.60   # 高于此分数直接判定可回答，省一次 LLM 调用
+  answerability_low_threshold: 0.10    # 低于此分数直接判定不可回答
+  max_context_chars: 4000  # 证据总长度硬上限
+  rerank_timeout_ms: 3000  # 精排超时后降级为 RRF 排序
+  request_timeout_ms: 5000 # 单次检索总预算
+  enable_sparse: true
+  enable_rerank: true
+  rerank_circuit_threshold: 3
+  rerank_cooldown_seconds: 120
+  answerability_circuit_threshold: 3
+  answerability_cooldown_seconds: 120
+  cache_size: 128
+  cache_ttl_seconds: 300

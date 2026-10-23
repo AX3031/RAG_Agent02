@@ -1,14 +1,37 @@
+import json
 import os
 
 from langchain.agents import create_agent
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
 from model.factory import chat_model
 from utils.prompt_loader import load_system_prompts
 from memorys.memory_factory import DEFAULT_MEMORY_MODE, create_checkpointer
-from agent.tools.agent_tools import (rag_summarize, get_weather, get_user_location, get_user_id, get_current_month,
-                                     fetch_external_data, fill_context_for_report, web_search_baidu)
+from agent.tools.agent_tools import (retrieve_knowledge, rag_summarize, get_weather, get_user_location, get_user_id,
+                                     get_current_month, fetch_external_data, fill_context_for_report,
+                                     web_search_baidu)
 from agent.tools.middleware import (monitor_tool, log_before_model, report_prompt_switch,
                                     pii_middleware_email, pii_middleware_phone, model_fallback_middleware)
+
+
+REFUSAL_TEXT = "根据现有资料无法回答该问题。"
+
+
+def _knowledge_insufficient(messages: list) -> bool:
+    """结构化防御：最后一次知识库检索明确证据不足时，禁止主 Agent 用自有知识硬编。"""
+    for message in reversed(messages):
+        if not isinstance(message, ToolMessage):
+            continue
+        name = getattr(message, "name", "") or ""
+        if name in {"web_search_baidu", "fetch_external_data"}:
+            return False
+        if name != "retrieve_knowledge":
+            continue
+        try:
+            payload = json.loads(message.content) if isinstance(message.content, str) else message.content
+        except (json.JSONDecodeError, TypeError):
+            return False
+        return bool(payload.get("status") in {"no_evidence", "error"} or not payload.get("answerable"))
+    return False
 
 
 def _default_memory_mode() -> str:
@@ -26,7 +49,7 @@ class ReactAgent:
         self.agent = create_agent(
             model=chat_model,
             system_prompt=load_system_prompts(),
-            tools=[rag_summarize, get_weather, get_user_location, get_user_id, get_current_month,
+            tools=[retrieve_knowledge, rag_summarize, get_weather, get_user_location, get_user_id, get_current_month,
                    fetch_external_data, fill_context_for_report, web_search_baidu],
             middleware=[model_fallback_middleware, pii_middleware_email, pii_middleware_phone,
                         monitor_tool, log_before_model, report_prompt_switch],
@@ -45,11 +68,15 @@ class ReactAgent:
 
         # 第三个参数context就是上下文runtime中的信息，就是我们提示词切换的标记
         for chunk in self.agent.stream(input_dict, stream_mode="values", context={"report": False}, config=config):
-            lastest_message = chunk["messages"][-1]
+            messages = chunk["messages"]
+            lastest_message = messages[-1]
             # 只输出模型回答，避免把用户问题、工具结果回显到页面
             if isinstance(lastest_message, AIMessage) and not lastest_message.tool_calls:
                 if isinstance(lastest_message.content, str) and lastest_message.content.strip():
-                    yield lastest_message.content.strip() + "\n"
+                    content = lastest_message.content.strip()
+                    if _knowledge_insufficient(messages):
+                        content = REFUSAL_TEXT
+                    yield content + "\n"
 
     def clear_memory(self, thread_id: str) -> None:
         """删除指定会话在后端 checkpointer 中的全部状态。"""

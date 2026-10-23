@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="840" viewBox="0 0 1600 840" role="img" aria-labelledby="ragTitle ragDesc">
-  <title id="ragTitle">RAG 数据流：知识入库与在线检索问答</title>
-  <desc id="ragDesc">上半部分为离线知识入库流水线（文件发现、加载、切分、向量化、写入 Chroma、MD5 去重），下半部分为在线检索问答链路（rag_summarize 工具、Retriever、上下文拼装、提示词、init_chat_model 构造的 ChatOpenAI、输出解析）。</desc>
+  <title id="ragTitle">RAG 数据流：知识入库与混合检索</title>
+  <desc id="ragDesc">上半部分为离线知识入库流水线（文件发现、加载、父子分块、稳定 chunk_id、向量化、写入 Chroma 与索引清单），下半部分为在线检索链路（retrieve_knowledge 工具、Dense+BM25、RRF、gte-rerank、父子扩展、Answerability、证据契约）。</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
@@ -19,8 +19,8 @@
   <rect width="1600" height="840" fill="#f8fafc"/>
 
   <g font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
-    <text x="48" y="52" font-size="30" font-weight="700" fill="#0f172a">RAG 数据流 · 知识入库与检索问答</text>
-    <text x="48" y="80" font-size="15" fill="#64748b">离线入库是手动批处理；在线问答由 Agent 通过 rag_summarize 工具按需触发</text>
+    <text x="48" y="52" font-size="30" font-weight="700" fill="#0f172a">RAG 数据流 · 知识入库与混合检索</text>
+    <text x="48" y="80" font-size="15" fill="#64748b">离线入库是手动批处理；在线检索由 Agent 通过 retrieve_knowledge / rag_summarize 触发</text>
 
     <!-- Ingestion band -->
     <rect x="40" y="104" width="1520" height="266" rx="14" fill="#f0f9ff" stroke="#bae6fd"/>
@@ -42,9 +42,9 @@
     <text x="540" y="216" font-size="11" fill="#64748b">→ Document</text>
 
     <rect x="756" y="152" width="220" height="84" rx="9" fill="#ffffff" stroke="#38bdf8" filter="url(#shadow)"/>
-    <text x="770" y="176" font-size="14" font-weight="700" fill="#0f172a">文本切分</text>
-    <text x="770" y="198" font-size="10.5" fill="#475569">RecursiveCharacterTextSplitter</text>
-    <text x="770" y="216" font-size="11" fill="#64748b">chunk 200 / overlap 20</text>
+    <text x="770" y="176" font-size="14" font-weight="700" fill="#0f172a">父子分块</text>
+    <text x="770" y="198" font-size="10.5" fill="#475569">structure-aware splitter</text>
+    <text x="770" y="216" font-size="11" fill="#64748b">child 240 / overlap 40 · parent 900</text>
 
     <rect x="1006" y="152" width="200" height="84" rx="9" fill="#ffffff" stroke="#38bdf8" filter="url(#shadow)"/>
     <text x="1020" y="176" font-size="13.5" font-weight="700" fill="#0f172a">DashScopeEmbeddings</text>
@@ -52,9 +52,9 @@
     <text x="1020" y="216" font-size="11" fill="#64748b">文档向量化</text>
 
     <rect x="1236" y="152" width="300" height="84" rx="9" fill="#ffffff" stroke="#0284c7" filter="url(#shadow)"/>
-    <text x="1250" y="176" font-size="14" font-weight="700" fill="#0f172a">Chroma 入库</text>
-    <text x="1250" y="198" font-size="11" fill="#475569">add_documents(split_document)</text>
-    <text x="1250" y="216" font-size="10.5" fill="#64748b">collection = agent · chroma_db/</text>
+    <text x="1250" y="176" font-size="14" font-weight="700" fill="#0f172a">Chroma + 清单</text>
+    <text x="1250" y="198" font-size="11" fill="#475569">add_documents(ids=chunk_id)</text>
+    <text x="1250" y="216" font-size="10.5" fill="#64748b">collection = agent_v2 · storage/</text>
 
     <path d="M266 194 H296" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
     <path d="M496 194 H526" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
@@ -68,26 +68,26 @@
     <text x="70" y="314" font-size="10.5" fill="#64748b">4KB 分块计算 MD5，避免大文件爆内存</text>
 
     <rect x="396" y="272" width="320" height="64" rx="9" fill="#fffbeb" stroke="#fbbf24"/>
-    <text x="410" y="294" font-size="13" font-weight="700" fill="#0f172a">check_md5_hex(md5.text)</text>
-    <text x="410" y="314" font-size="10.5" fill="#64748b">命中 → 跳过；未命中 → 入库成功后追加</text>
+    <text x="410" y="294" font-size="13" font-weight="700" fill="#0f172a">IndexManifest 版本比对</text>
+    <text x="410" y="314" font-size="10.5" fill="#64748b">同版本 → 跳过；变化 → 新版本落库后删旧块</text>
 
     <rect x="756" y="272" width="300" height="64" rx="9" fill="#fff7ed" stroke="#fb923c"/>
-    <text x="770" y="294" font-size="13" font-weight="700" fill="#c2410c">只增不删</text>
-    <text x="770" y="314" font-size="10.5" fill="#64748b">文件内容变化会新增 chunk，旧向量保留</text>
+    <text x="770" y="294" font-size="13" font-weight="700" fill="#c2410c">版本传播 + 删除</text>
+    <text x="770" y="314" font-size="10.5" fill="#64748b">按 doc_id / chunk_id 精确清理旧版本</text>
 
     <rect x="1096" y="272" width="440" height="64" rx="9" fill="#ffffff" stroke="#cbd5e1"/>
-    <text x="1110" y="294" font-size="13" font-weight="700" fill="#0f172a">触发方式：uv run -m rag.vector_store</text>
-    <text x="1110" y="314" font-size="10.5" fill="#64748b">当前没有 UI 上传入口；app_file_uploader.py 为空壳</text>
+    <text x="1110" y="294" font-size="13" font-weight="700" fill="#0f172a">触发：uv run -m rag.vector_store</text>
+    <text x="1110" y="314" font-size="10.5" fill="#64748b">--rebuild 全量重建 / --delete-doc 级联删除 / prune</text>
 
     <path d="M161 236 V256 H206 V272" fill="none" stroke="#d97706" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#arrowDash)"/>
     <path d="M356 304 H396" fill="none" stroke="#d97706" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#arrowDash)"/>
     <path d="M716 304 H756" fill="none" stroke="#d97706" stroke-width="1.6" stroke-dasharray="6 5" marker-end="url(#arrowDash)"/>
 
-    <text x="56" y="356" font-size="10.5" fill="#64748b">每个文件先算 MD5：已处理过的文件整份跳过，避免重复 embedding 与重复计费。</text>
+    <text x="56" y="356" font-size="10.5" fill="#64748b">每个文件先算 MD5：同版本跳过；内容变化时先写新版本，再按清单删除旧块；磁盘删除可 prune。</text>
 
     <!-- Query band -->
     <rect x="40" y="400" width="1520" height="330" rx="14" fill="#ecfdf5" stroke="#a7f3d0"/>
-    <text x="56" y="426" font-size="12" font-weight="600" fill="#047857" letter-spacing="1.2">在线 · 检索问答流水线（由 Agent 工具调用触发）</text>
+    <text x="56" y="426" font-size="12" font-weight="600" fill="#047857" letter-spacing="1.2">在线 · 混合检索与证据契约（由 Agent 工具调用触发）</text>
 
     <rect x="56" y="460" width="190" height="84" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
     <text x="70" y="484" font-size="14" font-weight="700" fill="#0f172a">用户问题</text>
@@ -95,29 +95,29 @@
     <text x="70" y="524" font-size="11" fill="#64748b">自然语言</text>
 
     <rect x="286" y="460" width="190" height="84" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
-    <text x="300" y="484" font-size="14" font-weight="700" fill="#0f172a">rag_summarize</text>
+    <text x="300" y="484" font-size="14" font-weight="700" fill="#0f172a">retrieve_knowledge</text>
     <text x="300" y="506" font-size="11" fill="#475569">@tool</text>
-    <text x="300" y="524" font-size="11" fill="#64748b">模型决定是否调用</text>
+    <text x="300" y="524" font-size="11" fill="#64748b">证据契约 / 可回答性</text>
 
     <rect x="516" y="460" width="220" height="84" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
-    <text x="530" y="484" font-size="14" font-weight="700" fill="#0f172a">Chroma Retriever</text>
-    <text x="530" y="506" font-size="11" fill="#475569">similarity · k = 3</text>
-    <text x="530" y="524" font-size="11" fill="#64748b">as_retriever(search_kwargs)</text>
+    <text x="530" y="484" font-size="14" font-weight="700" fill="#0f172a">Dense + BM25</text>
+    <text x="530" y="506" font-size="11" fill="#475569">dense_k=15 · sparse_k=15</text>
+    <text x="530" y="524" font-size="11" fill="#64748b">Chroma + 自研 BM25</text>
 
     <rect x="776" y="460" width="220" height="84" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
-    <text x="790" y="484" font-size="14" font-weight="700" fill="#0f172a">拼装参考资料</text>
-    <text x="790" y="506" font-size="11" fill="#475569">page_content + metadata</text>
-    <text x="790" y="524" font-size="11" fill="#64748b">编号后拼成 context</text>
+    <text x="790" y="484" font-size="14" font-weight="700" fill="#0f172a">RRF + 精排</text>
+    <text x="790" y="506" font-size="11" fill="#475569">RRF(k=60) → gte-rerank-v2</text>
+    <text x="790" y="524" font-size="11" fill="#64748b">失败/额度耗尽 → 降级 RRF</text>
 
     <rect x="1036" y="460" width="220" height="84" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
-    <text x="1050" y="484" font-size="14" font-weight="700" fill="#0f172a">rag_summarize.txt</text>
-    <text x="1050" y="506" font-size="11" fill="#475569">PromptTemplate</text>
-    <text x="1050" y="524" font-size="11" fill="#64748b">{input} + {context}</text>
+    <text x="1050" y="484" font-size="14" font-weight="700" fill="#0f172a">父子扩展 + 组装</text>
+    <text x="1050" y="506" font-size="11" fill="#475569">parent_id → 父块正文</text>
+    <text x="1050" y="524" font-size="11" fill="#64748b">evidence[] + answerable</text>
 
     <rect x="1296" y="460" width="240" height="84" rx="9" fill="#ffffff" stroke="#0284c7" filter="url(#shadow)"/>
-    <text x="1310" y="484" font-size="14" font-weight="700" fill="#0f172a">ChatOpenAI</text>
-    <text x="1310" y="506" font-size="11" fill="#475569">qwen3.5-flash · init_chat_model</text>
-    <text x="1310" y="524" font-size="11" fill="#64748b">DashScope 兼容端点</text>
+    <text x="1310" y="484" font-size="14" font-weight="700" fill="#0f172a">Answerability</text>
+    <text x="1310" y="506" font-size="11" fill="#475569">qwen-flash YES/NO + 阈值兜底</text>
+    <text x="1310" y="524" font-size="11" fill="#64748b">no_evidence → 拒答</text>
 
     <path d="M246 502 H286" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
     <path d="M476 502 H516" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
@@ -126,19 +126,19 @@
     <path d="M1256 502 H1296" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
 
     <rect x="1296" y="600" width="240" height="60" rx="9" fill="#eef2ff" stroke="#818cf8"/>
-    <text x="1310" y="624" font-size="13.5" font-weight="700" fill="#0f172a">StrOutputParser</text>
-    <text x="1310" y="643" font-size="10.5" fill="#64748b">纯文本回答</text>
+    <text x="1310" y="624" font-size="13.5" font-weight="700" fill="#0f172a">RetrievalResult</text>
+    <text x="1310" y="643" font-size="10.5" fill="#64748b">contract / evidence / trace</text>
 
     <path d="M1416 544 V600" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
     <path d="M1296 630 H381 V544" fill="none" stroke="#059669" stroke-width="1.8" marker-end="url(#arrowBack)"/>
-    <text x="700" y="648" font-size="11" fill="#059669" text-anchor="middle">字符串返回给工具 → Agent 继续生成最终回答</text>
+    <text x="700" y="648" font-size="11" fill="#059669" text-anchor="middle">契约返回给 Agent → 受控生成或拒答（证据不足时强制拒答）</text>
 
-    <text x="56" y="682" font-size="10.5" fill="#64748b">LCEL Chain：PromptTemplate | ChatModel | StrOutputParser，定义在 rag/rag_service.py 的 _init_chain()。</text>
-    <text x="56" y="702" font-size="10.5" fill="#64748b">检索侧没有相似度阈值、没有 rerank；k 与切分参数都在 config/chroma.yml 中调整。</text>
+    <text x="56" y="682" font-size="10.5" fill="#64748b">检索：Dense(Chroma) + Sparse(BM25) → RRF(k=60) → gte-rerank-v2 → 父块扩展 → Answerability（qwen-flash）。</text>
+    <text x="56" y="702" font-size="10.5" fill="#64748b">契约：status=ok/no_evidence/degraded/denied/error；降级阶段写入 degraded_stages；trace 只记 query_hash 与 evidence_id。</text>
     <text x="56" y="722" font-size="10.5" fill="#64748b">提示词约束：事实忠实、证据不足拒答、引用编号、指令隔离（prompts/rag_summarize.txt）。</text>
 
-    <text x="48" y="778" font-size="11" fill="#94a3b8">当前示例数据：2 个文件 → 3 个 chunk；md5.text 3 条；Chroma 持久化目录 chroma_db/（collection = agent）。</text>
-    <text x="1552" y="778" font-size="11" fill="#94a3b8" text-anchor="end">RAG 数据流 · 代码基线 05308a7 · 2026-10-22</text>
-    <text x="48" y="810" font-size="11" fill="#94a3b8">实线 = 数据/调用流；橙色虚线 = 去重判断；绿色实线 = 结果返回。</text>
+    <text x="48" y="778" font-size="11" fill="#94a3b8">当前数据：论语 + 需求文档 + 两个小样本 → 239 子块 / 96 父块；collection = agent_v2；清单 storage/index_manifest.json。</text>
+    <text x="1552" y="778" font-size="11" fill="#94a3b8" text-anchor="end">RAG 数据流 · dev01 工作区快照 · 2026-10-23</text>
+    <text x="48" y="810" font-size="11" fill="#94a3b8">实线 = 数据/调用流；橙色虚线 = 版本比对与删除；绿色实线 = 契约返回。</text>
   </g>
 </svg>

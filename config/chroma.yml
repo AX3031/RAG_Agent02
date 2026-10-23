@@ -1,11 +1,16 @@
-collection_name: agent
+collection_name: agent_v2
 persist_directory: chroma_db
-k: 3
+k: 5
 data_path: data
-md5_hex_store: md5.text
 allow_knowledge_file_type: ["txt","pdf"]
 
-# vector spliter,not md5 spliter
-chunk_size: 200
-chunk_overlap: 20
-separators: ["\n\n", "\n", ".", "!", "?", "。", "！", "？", " ", ""]
+# 结构化分块（父子分块：子块用于召回，父块用于上下文扩展）
+chunk_size: 240
+chunk_overlap: 40
+parent_chunk_size: 900
+separators: ["\n\n", "\n", "。", "！", "？", "；", ".", "!", "?", " ", ""]
+
+# 索引运维：文件 -> 版本 -> chunk_id 清单；父块存储
+index_manifest: storage/index_manifest.json
+parent_store: storage/parents.json
+scope_tags: ["public"]

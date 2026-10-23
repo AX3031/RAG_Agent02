@@ -17,7 +17,7 @@
 
   <g font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
     <text x="48" y="52" font-size="30" font-weight="700" fill="#0f172a">机器人智能客服 Agent · 系统架构总览</text>
-    <text x="48" y="80" font-size="15" fill="#64748b">LangChain 1.4 create_agent + init_chat_model（LangGraph）· DashScope 模型 · Chroma RAG · Streamlit UI</text>
+    <text x="48" y="80" font-size="15" fill="#64748b">LangChain 1.4 create_agent + init_chat_model（LangGraph）· DashScope 模型 · Chroma + BM25 + Rerank · Streamlit UI</text>
 
     <!-- Presentation layer -->
     <rect x="40" y="104" width="1120" height="88" rx="14" fill="#eff6ff" stroke="#bfdbfe"/>
@@ -57,12 +57,12 @@
 
     <!-- Tool layer -->
     <rect x="40" y="352" width="1120" height="194" rx="14" fill="#ecfdf5" stroke="#a7f3d0"/>
-    <text x="56" y="374" font-size="12" font-weight="600" fill="#047857" letter-spacing="1.2">工具层 · TOOLS（8 个 @tool 注册，模型按需调用）</text>
-    <text x="64" y="530" font-size="10.5" fill="#047857">另有 web_search_baidu：百度联网搜索，解析 web / image / video 结果</text>
+    <text x="56" y="374" font-size="12" font-weight="600" fill="#047857" letter-spacing="1.2">工具层 · TOOLS（9 个 @tool 注册，模型按需调用）</text>
+    <text x="64" y="530" font-size="10.5" fill="#047857">另有 rag_summarize（受控摘要）与 web_search_baidu（百度联网搜索）</text>
 
     <rect x="64" y="388" width="250" height="48" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
-    <text x="76" y="408" font-size="13.5" font-weight="600" fill="#0f172a">rag_summarize</text>
-    <text x="76" y="425" font-size="10.5" fill="#64748b">向量库检索 + 总结</text>
+    <text x="76" y="408" font-size="13.5" font-weight="600" fill="#0f172a">retrieve_knowledge</text>
+    <text x="76" y="425" font-size="10.5" fill="#64748b">结构化证据 + answerable</text>
     <rect x="330" y="388" width="250" height="48" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
     <text x="342" y="408" font-size="13.5" font-weight="600" fill="#0f172a">get_weather</text>
     <text x="342" y="425" font-size="10.5" fill="#64748b">天气（当前为模拟数据）</text>
@@ -89,13 +89,13 @@
     <rect x="40" y="566" width="1120" height="132" rx="14" fill="#fff7ed" stroke="#fed7aa"/>
     <text x="56" y="588" font-size="12" font-weight="600" fill="#c2410c" letter-spacing="1.2">核心服务层 · SERVICES</text>
     <rect x="64" y="600" width="390" height="82" rx="9" fill="#ffffff" stroke="#fb923c" filter="url(#shadow)"/>
-    <text x="80" y="624" font-size="14" font-weight="700" fill="#0f172a">RagSummarizeService</text>
-    <text x="80" y="646" font-size="10.5" fill="#475569">retriever → PromptTemplate → ChatModel → StrOutputParser</text>
-    <text x="80" y="664" font-size="10.5" fill="#64748b">rag_summarize(query) 的完整链路</text>
+    <text x="80" y="624" font-size="14" font-weight="700" fill="#0f172a">RetrievalService</text>
+    <text x="80" y="646" font-size="10.5" fill="#475569">Dense + BM25 → RRF → rerank → 父子扩展</text>
+    <text x="80" y="664" font-size="10.5" fill="#64748b">retrieve_knowledge / rag_summarize 的检索链路</text>
     <rect x="478" y="600" width="390" height="82" rx="9" fill="#ffffff" stroke="#fb923c" filter="url(#shadow)"/>
     <text x="494" y="624" font-size="14" font-weight="700" fill="#0f172a">VectorStoreService</text>
-    <text x="494" y="646" font-size="10.5" fill="#475569">Chroma 持久化 · 文本切分 · MD5 去重</text>
-    <text x="494" y="664" font-size="10.5" fill="#64748b">load_document() / get_retriever()</text>
+    <text x="494" y="646" font-size="10.5" fill="#475569">Chroma 持久化 · 父子分块 · 索引清单</text>
+    <text x="494" y="664" font-size="10.5" fill="#64748b">load_document() / rebuild() / similarity_search_with_score()</text>
     <rect x="892" y="600" width="224" height="82" rx="9" fill="#ffffff" stroke="#fb923c" filter="url(#shadow)"/>
     <text x="906" y="624" font-size="13.5" font-weight="700" fill="#0f172a">Prompt Loader</text>
     <text x="906" y="646" font-size="10.5" fill="#475569">utils/prompt_loader.py</text>
@@ -117,18 +117,18 @@
     <text x="384" y="806" font-size="10.5" fill="#64748b">文档 / 查询向量化</text>
     <rect x="676" y="746" width="280" height="72" rx="9" fill="#ffffff" stroke="#94a3b8" filter="url(#shadow)"/>
     <text x="690" y="770" font-size="13.5" font-weight="700" fill="#0f172a">Chroma</text>
-    <text x="690" y="790" font-size="10.5" fill="#475569">collection = agent</text>
-    <text x="690" y="806" font-size="10.5" fill="#64748b">persist = chroma_db/</text>
+    <text x="690" y="790" font-size="10.5" fill="#475569">collection = agent_v2</text>
+    <text x="690" y="806" font-size="10.5" fill="#64748b">239 子块 · persist = chroma_db/</text>
     <rect x="982" y="746" width="150" height="72" rx="9" fill="#ffffff" stroke="#94a3b8" filter="url(#shadow)"/>
     <text x="994" y="770" font-size="13.5" font-weight="700" fill="#0f172a">本地文件</text>
-    <text x="994" y="790" font-size="10.5" fill="#475569">data/ · md5.text</text>
-    <text x="994" y="806" font-size="10.5" fill="#64748b">原始资料 / 去重清单</text>
+    <text x="994" y="790" font-size="10.5" fill="#475569">data/ · storage/</text>
+    <text x="994" y="806" font-size="10.5" fill="#64748b">原始资料 / 索引清单 + 父块</text>
 
     <path d="M330 682 V746" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
     <path d="M560 682 V746" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
     <path d="M800 682 V746" fill="none" stroke="#475569" stroke-width="1.8" marker-end="url(#arrow)"/>
 
-    <text x="64" y="852" font-size="10.5" fill="#64748b">向量库示例数据：3 个 chunk；切分 chunk_size=200 / overlap=20；日志：logs/agent_YYYYMMDD.log（控制台 INFO / 文件 DEBUG）</text>
+    <text x="64" y="852" font-size="10.5" fill="#64748b">向量库：239 子块 / 96 父块；子块 240 / overlap 40，父块 900；清单 storage/index_manifest.json；日志：logs/agent_YYYYMMDD.log</text>
     <text x="64" y="870" font-size="10.5" fill="#64748b">会话记忆在输入框左侧按钮切换：短期记忆（默认）/ 本地 JSON / PostgreSQL；侧边栏管理会话 ID。</text>
 
     <!-- Prompt switch (dashed) -->

@@ -14,7 +14,12 @@ user_ids  = ["1001", "1002", "1003", "1004", "1005", "1006", "1007", "1008", "10
 month_arr = ["2025-01", "2025-02", "2025-03", "2025-04", "2025-05", "2025-06", "2025-07", "2025-08", "2025-09", "2025-10", "2025-11", "2025-12"]
 external_data = {}
 
-@tool(description="从向量存储中检索参考资料")
+@tool(description="从企业知识库检索证据，返回结构化 JSON：contract_version/request_id/status/answerable/evidence[]（含 evidence_id、doc_id、标题、页码、正文、分数）/degraded_stages。回答知识型问题并需要可追溯出处时优先使用")
+def retrieve_knowledge(query: str) -> str:
+    return rag.retrieve(query).to_json()
+
+
+@tool(description="从向量存储中检索参考资料并生成受控总结")
 def rag_summarize(query: str) -> str:
     return rag.rag_summarize(query)
 
