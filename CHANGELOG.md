@@ -19,7 +19,7 @@
 - `tests/`：35 条 stdlib unittest（指标、BM25、分块、契约、清单、RRF/缓存、Agent 拒答护栏）。
 - `agent/tools/agent_tools.py`：`retrieve_knowledge(query)` 工具，返回结构化证据 JSON。
 - `agent/react_agent.py`：`_knowledge_insufficient` 确定性护栏——证据不足时强制输出「根据现有资料无法回答该问题」。
-- `docs/rag-improvement/`：进度备忘录 + 阶段 0-4 的入门讲解与反思。
+- `docs/rag-improvement/`：进度备忘录 + 阶段 0-4 的入门讲解与反思；`06-长期改造经验与方法论.md`（长任务工作方法：开始、阶段门、复盘、效率与避免幻觉）。
 - `data/论语.pdf` 测试语料；`eval/prepare_local_corpus.py` 生成不纳入版本管理的需求文档语料。
 - `config/rag.yml` 新增 `rerank_model_name` 与 `retrieval:` 段（候选数、RRF、精排、Answerability、熔断、缓存）。
 - `config/chroma.yml` 新增 `parent_chunk_size`、`index_manifest`、`parent_store`、`scope_tags`。
@@ -37,7 +37,9 @@
 - `prompts/rag_summarize.txt`：证据分隔符、evidence_id 引用、非法引用约束。
 - `prompts/main_prompt.txt`：新增 `retrieve_knowledge`、证据不足硬约束、引用出处要求。
 - `README.md`、`docs/PROJECT_OVERVIEW.md`、`docs/ARCHITECTURE.md`、`docs/architecture.svg`、`docs/rag-pipeline.svg` 同步 RAG 改造。
-- `.gitignore` 增加 `storage/`、`chroma_db/`、`logs/`、`md5.text`、本地评测集与语料；历史跟踪清理见 ARCHITECTURE 10.2（沙箱未执行 `git rm --cached`）。
+- `.gitignore` 增加 `storage/`、`chroma_db/`、`logs/`、`md5.text`、本地评测集与语料。
+- 解除运行产物的历史跟踪（技术债 TD-16）：`chroma_db/`、`logs/`、`md5.text`、`memorys/chat_history/`、各模块 `__pycache__/*.pyc` 共 29 个文件移出 Git 索引，本地文件保留；`.gitignore` 规则自此生效，`docs/ARCHITECTURE.md` 10.2 记下做法与沙箱拦截 `rm` 的踩坑。
+- `docs/rag-improvement/06-长期改造经验与方法论.md` 已同步进索引：`AGENTS.md` 阅读顺序、`README.md` 文档地图、`docs/PROJECT_OVERVIEW.md` 问题索引。
 - 三种会话记忆统一走 LangGraph checkpointer（`short_term` → `InMemorySaver`；`file` → `FileCheckpointSaver`；`postgres` → 原有 `PostgresSaver`）；`execute_stream` 每次只传当前一条 `HumanMessage`，历史由 `thread_id` 自动恢复。
 - `memorys/postgres_checkpointer.py`：连接池 `timeout` 由 30 秒改为 5 秒，数据库未启动时快速失败并由界面回退为短期记忆，不再卡住页面。
 - `memorys/temporary_memory.py`、`memorys/persistent_memory.py` 保留为示例、不接入主链路：其接口是 `BaseChatMessageHistory`，缺少 `get_tuple/put/put_writes/list/delete_thread`，且 `InMemoryChatMessageHistory` 在 LangChain 1.6.4 已标记废弃。

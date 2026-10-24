@@ -343,6 +343,7 @@ project2/
 | [docs/rag-improvement/03-阶段2-混合检索.md](docs/rag-improvement/03-阶段2-混合检索.md) | BM25 / RRF / Rerank 入门与收益 |
 | [docs/rag-improvement/04-阶段3-可回答性与工程化.md](docs/rag-improvement/04-阶段3-可回答性与工程化.md) | Answerability、trace、缓存、注入防御 |
 | [docs/rag-improvement/05-阶段4-接入与验收.md](docs/rag-improvement/05-阶段4-接入与验收.md) | Agent 接入、测试、验收与整体反思 |
+| [docs/rag-improvement/06-长期改造经验与方法论.md](docs/rag-improvement/06-长期改造经验与方法论.md) | 长任务工作方法：开始、阶段门、复盘、效率与避免幻觉 |
 | [AGENTS.md](AGENTS.md) | AI 阅读约定（可选，供编码助手使用） |
 | [CHANGELOG.md](CHANGELOG.md) | 重要变更：加了什么 / 改了什么 / 修了什么 |
 

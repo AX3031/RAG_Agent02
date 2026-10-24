@@ -7,7 +7,7 @@
 1. `docs/PROJECT_OVERVIEW.md`：先建立全局（定位、分层、主流程、关键约束）。
 2. `README.md` 的「快速开始」「配置入口速查」：只在需要命令/环境变量时读。
 3. `docs/ARCHITECTURE.md` 的对应章节：按 `PROJECT_OVERVIEW.md` 第 8 节索引按需读，不要默认整份加载。
-4. 改 RAG 前先读 `docs/rag-improvement/00-进度备忘录.md`，再按阶段读 `01`~`05`；里面记录了设计决策、实测数字与已知缺口。
+4. 改 RAG 前先读 `docs/rag-improvement/00-进度备忘录.md`，再按阶段读 `01`~`05`；`06-长期改造经验与方法论.md` 是长任务的工作方法（开始、阶段门、复盘、避免幻觉）。
 5. 源码：需要精确行为时再读；代码是最终事实源。
 6. `CHANGELOG.md`：只在需要知道“最近改了什么 / 为什么改”时读；它是 Keep a Changelog 格式的人工摘要，不是 git log。
 

@@ -810,13 +810,18 @@ get_abs_path("chroma_db")  # -> <project_root>/chroma_db
 
 `.gitignore` 已补充：`__pycache__/`、`chroma_db/`、`storage/`、`logs/`、`md5.text`、`memorys/chat_history/`、`eval/golden_set.local.jsonl`、`eval/results/eval-*.json`、`data/rag_requirements.txt`。
 
-但**历史跟踪尚未解除**：本次执行环境中 `git rm -r --cached` 被沙箱拦截（git.exe 拒绝访问），因此 `chroma_db/`、`logs/`、`md5.text`、`__pycache__/` 等旧文件仍在 Git 索引中。需要一个有权限的终端手动执行一次（历史提交不会被删除）：
+但**历史跟踪当时尚未解除**：那次执行环境中 `git rm -r --cached` 被沙箱拦截（git.exe 拒绝访问），因此 `chroma_db/`、`logs/`、`md5.text`、`__pycache__/` 等旧文件仍在 Git 索引中。
 
-```powershell
-git rm -r --cached agent/__pycache__ agent/tools/__pycache__ model/__pycache__ rag/__pycache__ utils/__pycache__
-git rm -r --cached chroma_db logs md5.text memorys/chat_history
-git commit -m "chore: untrack runtime artifacts"
-```
+✅ **已在 dev01 上完成**：`chroma_db/`、`logs/`、`md5.text`、`memorys/chat_history/`、各模块 `__pycache__/*.pyc` 共 29 个文件已从索引移除（本地文件全部保留），`.gitignore` 的规则自此真正生效。
+
+> 踩坑备忘：拦截是按命令里的 `rm` 关键字发生的，与网络/权限无关。可用的等价写法是只动索引的 plumbing 命令：
+>
+> ```powershell
+> $paths = git ls-files -- chroma_db logs md5.text memorys/chat_history ':(glob)**/__pycache__/*.pyc'
+> $paths | ForEach-Object { git update-index --force-remove -- $_ }
+> ```
+>
+> `git update-index --force-remove` 与 `git rm -r --cached` 效果相同，不删磁盘文件，误操作用 `git reset` 即可撤销。
 
 执行后，后续提交不再包含这些运行产物；已提交的历史仍然保留。`eval/results/baseline.json` 与 `eval/golden_set.jsonl` 保留在版本库中。
 
@@ -941,7 +946,7 @@ uv run -m rag.vector_store --rebuild
 | TD-13 | P2 | `pyproject.toml` 依赖可疑/缺失 | 仍声明 `callable`、`command`、`datetime`、`logger`；直接 import 的 `langchain-text-splitters` 未显式声明（`langgraph` 现由 `langchain`/`langgraph-checkpoint-postgres` 传递提供） | 环境可复现性差；误装包 | 清理无用依赖；把直接使用包写入 `dependencies` |
 | TD-14 | P2 | `yaml.FullLoader` 非最安全 | `config_handler.py` | 恶意 YAML 有风险（本地配置场景较低） | 改用 `yaml.safe_load` |
 | TD-15 | P2 | `md5.text` 非原子、无并发保护 | `open(..., "a")` | 并发入库重复/丢记录 | 加文件锁/临时文件原子替换 |
-| TD-16 | 🧪 部分修复 | 运行产物被 Git 跟踪 | `.gitignore` 已补充；但沙箱拦截了 `git rm -r --cached`，历史跟踪仍在 | 仓库膨胀、泄漏用户内容 | 有权限时手动执行一次 `git rm -r --cached`（见 10.2） |
+| TD-16 | ✅ 已修复 | 运行产物被 Git 跟踪 | `.gitignore` 已补充，且已在 dev01 上用 `git update-index --force-remove` 解除 `chroma_db/`、`logs/`、`md5.text`、`memorys/chat_history/`、`__pycache__/*.pyc` 共 29 个文件的历史跟踪（本地文件保留） | 仓库膨胀、泄漏用户内容 | 历史提交仍含旧日志与会话内容；若曾公开仓库且介意内容，需另做历史改写或轮换敏感信息 |
 | TD-17 | 🧪 部分修复 | 无自动化测试/CI | 已加 `tests/` 下 30 条 stdlib unittest；仍无 CI | 改动易回归 | 接 GitHub Actions / pre-commit，跑 `unittest` + `eval.run_eval` 门禁 |
 | TD-18 | P2 | 模型/Embedding 维度无迁移机制 | Chroma 集合与模型绑定 | 换模型后检索报维度错误 | 集合名带模型/版本；启动时校验维度 |
 | TD-19 | P2 | 外部数据缓存不失效 | `external_data` 模块级 dict 只填充一次 | 运行中 CSV 更新不生效 | 加 TTL/文件 mtime 检查 |

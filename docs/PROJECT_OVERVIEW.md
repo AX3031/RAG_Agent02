@@ -96,6 +96,7 @@ tests/        35 条 stdlib unittest
 | RAG 怎么入库/检索？ | [ARCHITECTURE 第 7 节](ARCHITECTURE.md#7-rag-子系统) + [rag-pipeline.svg](rag-pipeline.svg) |
 | RAG 怎么评测/调参？ | [docs/rag-improvement/01-阶段0-评估标尺.md](rag-improvement/01-阶段0-评估标尺.md) |
 | 证据契约/索引更新？ | [docs/rag-improvement/02-阶段1-证据契约与索引平面.md](rag-improvement/02-阶段1-证据契约与索引平面.md) |
+| 长任务怎么做、怎么复盘？ | [docs/rag-improvement/06-长期改造经验与方法论.md](rag-improvement/06-长期改造经验与方法论.md) |
 | 报告场景怎么切换？ | [ARCHITECTURE 第 8 节](ARCHITECTURE.md#8-报告场景与动态提示词) |
 | 配置在哪改？ | [ARCHITECTURE 第 9 节](ARCHITECTURE.md#9-配置体系) + [README 配置速查](../README.md#7-配置入口速查) |
 | 想加工具/上传/记忆？ | [ARCHITECTURE 第 13 节](ARCHITECTURE.md#13-扩展指南) |
