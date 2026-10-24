@@ -140,7 +140,7 @@
 | HTTP 客户端 | requests | 2.34.2 | 百度联网搜索 | `agent/tools/agent_tools.py` |
 | 追踪 | langsmith | 0.12.2 | 传递依赖；当前未显式启用 | — |
 
-模型：`qwen3.5-flash`（对话）、`text-embedding-v4`（向量化）、`glm-5`（备用对话）、`qwen-flash`（Answerability 判定）、`gte-rerank-v2`（精排）。
+模型：`qwen3.5-flash`（对话）、`text-embedding-v4`（向量化）、`glm-5`（备用对话）、`qwen-flash`（Answerability 判定）、`qwen3-rerank`（当前默认精排；`gte-rerank-v2` 为历史对比，`qwen3-vl-rerank` 为排序优先备选，见 `docs/rag-improvement/07-rerank模型对比报告.md`）。
 
 ### 3.1 框架关系
 
@@ -236,7 +236,7 @@ project2/
 │   ├── rag_service.py           # ✅ 受控生成
 │   └── vector_store.py          # ✅ 入库/更新/删除/重建
 ├── eval/                        # ✅ Golden Set、指标、评测、阈值校准
-├── tests/                       # ✅ 35 条 stdlib unittest
+├── tests/                       # ✅ 37 条 stdlib unittest
 ├── model/
 │   └── factory.py               # ✅ Chat/Embedding 工厂
 ├── memorys/
@@ -277,10 +277,12 @@ project2/
 | `rag/answerability.py` | `AnswerabilityChecker` | qwen-flash YES/NO 判定；快速路径；阈值兜底 | 被 `RetrievalService` 使用 |
 | `rag/telemetry.py` | `Trace`、`TTLCache`、`make_cache_key` | trace_id、分段延迟、脱敏日志、TTL/LRU 缓存 | 被 `RetrievalService` 使用 |
 | `rag/rag_service.py` | `RagSummarizeService`、`retrieve`、`rag_summarize` | 调用检索服务、拼装证据、受控生成、引用校验 | 上游：`rag_summarize` 工具；下游：`RetrievalService`、ChatModel |
-| `rag/vector_store.py` | `VectorStoreService`、`load_document`、`delete_document`、`rebuild`、`similarity_search_with_score` | Chroma 初始化、父子分块入库、版本传播、删除/重建、Dense 检索 | 上游：手动入库/检索服务；下游：Chroma、Embedding、清单/父块 |
-| `eval/run_eval.py` | `evaluate_mode`、`build_mode_config` | 三模式离线评测与 JSON 快照 | 上游：CLI；下游：`RetrievalService`、Golden Set |
-| `eval/retrieval_metrics.py` | `recall_at_k`、`mrr_at_k`、`ndcg_at_k`、`resolve_snippets` | 检索指标与片段→块映射 | 被 `run_eval` 使用 |
+| `rag/vector_store.py` | `VectorStoreService`（可传 `collection_name/index_manifest/parent_store/include_keywords/data_path`）、`load_document`、`delete_document`、`rebuild`、`similarity_search_with_score`、`_is_included` | Chroma 初始化、父子分块入库、版本传播、删除/重建、Dense 检索、分库实验 | 上游：手动入库/检索服务；下游：Chroma、Embedding、清单/父块 |
+| `eval/run_eval.py` | `evaluate_mode`、`build_mode_config`、`main` | 三模式离线评测与 JSON 快照；支持 collection/rerank model/answerability mode/tag | 上游：CLI；下游：`RetrievalService`、Golden Set |
+| `eval/retrieval_metrics.py` | `recall_at_k`、`mrr_at_k`、`ndcg_at_k`、`resolve_snippets` | 检索指标与片段→块映射（支持 `min_chunk_chars`） | 被 `run_eval` 使用 |
 | `eval/calibrate_threshold.py` | `main` | 用 Golden Set 校准可回答性阈值 | 上游：CLI；下游：评测报告 |
+| `eval/compare_reports.py` | `load_report`、`compare` | 对比两份 eval 报告的逐 query 胜负、top-1 变化与指标 | 上游：CLI；下游：评测报告 |
+| `eval/prepare_local_corpus.py` | `extract_paragraphs`、`main` | 把本地 docx 需求文档转成可入库文本 | 上游：CLI；下游：`data/rag_requirements.txt` |
 | `model/factory.py` | `BaseModelFactory`、`ChatModelFactory`、`EmbeddingsFactory`、`chat_model`、`embed_model` | 创建 Chat/Embedding 单例；加载 `.env` | 被 RAG、工具、Agent 使用 |
 | `utils/config_handler.py` | `rag_conf`、`chroma_conf`、`prompts_conf`、`agent_conf` | 启动时读取四份 YAML | 被全项目引用 |
 | `utils/prompt_loader.py` | `load_system_prompts`、`load_rag_prompts`、`load_report_prompts` | 按配置路径读取提示词文件 | 被 Agent/中间件/RAG 使用 |
@@ -544,8 +546,8 @@ AIMessage("深圳今天晴天，26℃...")
 
 当前数据状态（2026-10-23 快照）：
 
-- `data/`：`论语.pdf`（142 子块）、`rag_requirements.txt`（95 子块，本地）、`测试文本.txt`、`测试pdf2.pdf`。
-- `chroma_db/`：collection `agent_v2`，239 个子块；`storage/`：96 个父块 + 索引清单。
+- `data/`：`论语.pdf`（142 子块）、`rag_requirements.txt`（95 子块，本地）、`测试文本.txt`、`测试pdf2.pdf`；另有 `《道德经》带讲解.pdf` 与 `道德经讲义(黄元吉).pdf`，单独建 `agent_dd` 集合（1543 子块 / 450 父块）。
+- `chroma_db/`：collection `agent_v2`（239 子块）与 `agent_dd`（1543 子块）；`storage/`：对应父块与索引清单。
 - `index_version = idx-fca9ff4e07`（由分块算法 + 参数 + Embedding 模型派生）。
 
 ### 7.2 在线检索（Dense + BM25 + RRF + Rerank）
@@ -560,7 +562,7 @@ AIMessage("深圳今天晴天，26℃...")
 | 4. Dense 召回 | `similarity_search_with_score(k=15, scope)` | Chroma L2 → `score.dense = 1/(1+distance)` |
 | 5. Sparse 召回 | `BM25Index.search(k=15, allowed_ids)` | 中文 unigram+bigram；`allowed_ids` 在打分前过滤 |
 | 6. RRF 融合 | `_rrf_fuse` | `score = Σ 1/(60+rank)`，零配置基线 |
-| 7. 精排 | `_rerank` → DashScope `gte-rerank-v2` | Top-N 候选重排；超时/失败/熔断 → 退回 RRF，记 `degraded_stages` |
+| 7. 精排 | `_rerank` → DashScope `qwen3-rerank`（默认，可配置） | Top-N 候选重排；超时/失败/熔断 → 退回 RRF，记 `degraded_stages` |
 | 8. 父子扩展 | `_assemble` → `ParentStore.get_many` | 按 `parent_id` 取父块作为 `evidence.context` |
 | 9. 可回答性 | `AnswerabilityChecker` | qwen-flash YES/NO + 快速路径 + 阈值兜底 + 熔断 |
 | 10. 契约返回 | `RetrievalResult.to_json` | `evidence[] / answerable / status / degraded_stages / latency_ms / index_version` |
@@ -579,7 +581,9 @@ AIMessage("深圳今天晴天，26℃...")
 
 ### 7.4 评估与参数
 
-离线评测：`uv run -m eval.run_eval --top-k 10`，Golden Set 为 `eval/golden_set.jsonl`（论语 50）+ `eval/golden_set.local.jsonl`（需求文档 21，本地）。指标：Recall@K / HitRate@K / MRR@K / NDCG@K + 随机基线 + 分桶。
+离线评测：`uv run -m eval.run_eval --top-k 10`，Golden Set 为 `eval/golden_set.jsonl`（论语 50）+ `eval/golden_set.local.jsonl`（需求文档 21，本地）+ `eval/golden_set_daodejing.jsonl`（道德经 32）。指标：Recall@K / HitRate@K / MRR@K / NDCG@K + 随机基线 + 分桶。
+
+模型对比：`uv run -m eval.run_eval --modes full --rerank-model qwen3-rerank --tag rerank-qwen3`；`uv run -m eval.compare_reports` 可对比两份报告的逐 query 胜负。分库实验用 `--collection agent_dd --index-manifest storage/index_manifest_dd.json --parent-store storage/parents_dd.json --include-keywords 道德经`。
 
 | 参数 | 当前值 | 影响 |
 | --- | --- | --- |
@@ -701,13 +705,16 @@ import agent.tools.middleware
 | `chat_model_name` | `qwen3.5-flash` | 对话模型名 | 需模型支持工具调用；重启生效 |
 | `backup_chat_model_name` | `glm-5` | 备用对话模型名 | 主模型调用失败时由 `ModelFallbackMiddleware` 自动切换 |
 | `embedding_model_name` | `text-embedding-v4` | 向量模型名 | 维度变化必须重建 Chroma；会改变 `index_version` |
-| `rerank_model_name` | `gte-rerank-v2` | 精排模型名 | 换模型需重跑 Golden Set；额度耗尽会降级 |
+| `rerank_model_name` | `qwen3-rerank` | 精排模型名 | 换模型需重跑 Golden Set 并重新校准阈值；额度耗尽会降级 |
 | `retrieval.dense_k` / `sparse_k` | `15` / `15` | 两路召回候选数 | 越大召回越全、延迟/成本越高 |
 | `retrieval.rrf_k` | `60` | RRF 常数 | 越小越偏向头部结果 |
 | `retrieval.rerank_top_n` / `final_top_n` | `5` / `5` | 精排保留数 / 最终证据数 | 影响上下文长度与成本 |
 | `retrieval.answerability_mode` | `llm` | 可回答性模式 | `llm` 更准但多一次模型调用；`threshold` 仅看分数 |
+| `retrieval.answerability_threshold` | `0.40` | `threshold` 模式阈值 | 按 qwen3-rerank 校准；换模型必须重算 |
 | `retrieval.answerability_timeout_ms` | `5000` | LLM 判定超时 | 超时退回阈值并记 `degraded` |
-| `retrieval.answerability_fallback_threshold` | `0.35` | 阈值兜底 | 越大越保守（误拒多、漏拒少） |
+| `retrieval.answerability_fallback_threshold` | `0.40` | 阈值兜底 | 越大越保守（误拒多、漏拒少） |
+| `retrieval.answerability_high_threshold` | `0.85` | 高分快速可回答 | 高于此值跳过 LLM，省一次调用 |
+| `retrieval.answerability_low_threshold` | `0.40` | 低分快速不可回答 | 低于此值直接拒答 |
 | `retrieval.rerank_timeout_ms` | `3000` | 精排超时 | 超时退回 RRF |
 | `retrieval.rerank_circuit_threshold` / `cooldown` | `3` / `120s` | 精排熔断 | 连续失败后短时间跳过 |
 | `retrieval.cache_size` / `ttl` | `128` / `300s` | 进程内缓存 | 多实例需换 Redis |
@@ -728,6 +735,7 @@ import agent.tools.middleware
 | `index_manifest` | `storage/index_manifest.json` | 文件→版本→块清单 |
 | `parent_store` | `storage/parents.json` | 父块存储 |
 | `scope_tags` | `["public"]` | 入库时写入的默认 ACL 标签 |
+| `exclude_keywords` | `["道德经"]` | 默认 `agent_v2` 跳过道德经实验语料；`agent_dd` 用 `--include-keywords` 单独建库 |
 
 ### 9.4 `config/agent.yml`
 
@@ -837,8 +845,9 @@ get_abs_path("chroma_db")  # -> <project_root>/chroma_db
 
 ### 10.4 向量库
 
-- Chroma 集合：`agent_v2`（旧集合 `agent` 保留但不使用）。
-- 当前 239 个子块 / 96 个父块（论语 + 需求文档 + 两个小样本）。
+- Chroma 集合：`agent_v2`（旧集合 `agent` 保留但不使用）与 `agent_dd`（道德经专用实验集合）。
+- `agent_v2`：239 个子块 / 96 个父块（论语 + 需求文档 + 两个小样本）。
+- `agent_dd`：1543 个子块 / 450 个父块（两版《道德经》，只用于评测与模型对比）。
 - 持久化：`chroma_db/chroma.sqlite3` + `chroma_db/<segment-id>/*.bin`；父块与清单在 `storage/`。
 - 不要手工编辑 SQLite；备份时整体复制 `chroma_db/` 与 `storage/`。
 - 更换分块参数/Embedding 模型后，`index_version` 会变化，需重建：
@@ -958,8 +967,8 @@ uv run -m rag.vector_store --rebuild
 | TD-25 | P3 | 工具返回模拟数据 | `get_weather`、`get_user_location`、`get_user_id`、`get_current_month` | 演示可以，真实业务不可用 | 替换为真实 API/数据库，加超时与降级 |
 | TD-26 | P3 | 项目命名不一致 | `pyproject.toml` 的 `name = "project1"`、目录 `project2`、`.venv` prompt 为 `project1` | 新成员困惑，包名/镜像名易错 | 统一项目名，更新 `pyproject` 与文档 |
 | TD-27 | P2 | 提示词注入/内容安全防护仍不完整 | 已加分隔符、提示词声明、引用校验、证据不足强制拒答；无输入/输出审核 | 恶意文档/输入仍可能有残留风险 | 接入 Prompt Guard / Llama Guard，做工具权限分级 |
-| TD-28 | P1 | rerank 依赖外部额度 | `gte-rerank-v2` 免费额度耗尽返回 403；已熔断降级为 RRF | full 模式精度下降，但不报错 | 预算告警；生产自托管 bge-reranker-v2-m3 |
-| TD-29 | P1 | Golden Set 规模与一致性不足 | 论语 50 + 需求文档 21；无双人 κ、无 holdout | 指标可能过拟合，不能对外承诺 | 扩到每语料 50-100；双人标注 + 仲裁；固定 holdout |
+| TD-28 | P1 | rerank 依赖外部额度 | `qwen3-rerank` / `gte-rerank-v2` 免费额度耗尽会返回 403；已熔断降级为 RRF | full 模式精度下降，但不报错 | 预算告警；生产自托管 bge-reranker-v2-m3 |
+| TD-29 | P1 | Golden Set 规模与一致性不足 | 论语 50 + 需求文档 21 + 道德经 32；无双人 κ、无 holdout | 指标可能过拟合，不能对外承诺 | 扩到每语料 50-100；双人标注 + 仲裁；固定 holdout |
 | TD-30 | P1 | 无 CI 回归门禁 | `eval/results/baseline.json` 只有手动对比 | 改 RAG 可能悄悄退化 | CI 跑 `run_eval`，Recall@10 不低于基线 -2%；abstention precision ≥ 0.9 |
 | TD-31 | P2 | 分块按字符而非 tokenizer | `chunk_size=240` 是字符数；无 tiktoken 依赖 | 不同模型 token 边界不一致 | 引入 tokenizer 计数，按模型校准 |
 | TD-32 | P2 | BM25 为内存态 | `BM25Index` 每次进程重建；不支持增量删除 | 多进程不一致，大规模下内存压力 | 生产换 Qdrant sparse / BGE-M3 sparse |
@@ -968,6 +977,8 @@ uv run -m rag.vector_store --rebuild
 | TD-35 | P2 | 索引重建后检索结果可能变化 | Chroma HNSW 近似检索，删除/重建会改变内部顺序 | 同一 query 的 Top-K 可能变化，评测快照不可严格比较 | `index_version` 增加构建批次；固定索引快照再对比 |
 | TD-36 | P1 | 无查询改写 | `ly-005` “十五岁” vs 原文“十有五”漏召回 | 现代词/指代式查询命中率低 | 主 Agent 侧改写或子 Agent 加 rewrite 节点 |
 | TD-37 | P2 | 父块存储为单 JSON | `storage/parents.json` 全量读写 | 文档量大时膨胀、并发写放大 | 生产换 PostgreSQL（项目已有依赖） |
+| TD-38 | P2 | `qwen3-vl-rerank` 分数不可校准 | precision≥0.9 下无可行 Answerability 阈值（可回答 0.682~0.951，不可回答 0.611~0.732） | 不能拿它的分数做拒答 | 只用于排序；Answerability 继续用 LLM judge |
+| TD-39 | P2 | Golden Set 标注覆盖不足 | `ly-028`、`rq-015` 等存在多个有效答案，但只标了部分片段 | 严格 chunk Recall 会低估 rerank | 补充“多有效答案”标注，或引入答案正确性评估 |
 
 ### 12.1 建议修复顺序
 
@@ -1231,7 +1242,7 @@ def require_conf(conf: dict, key: str):
 
 ### 13.10 测试策略
 
-已落地 35 条 stdlib `unittest`（无需网络/模型）：
+已落地 37 条 stdlib `unittest`（无需网络/模型）：
 
 ```text
 tests/
@@ -1370,7 +1381,8 @@ uv run streamlit run app.py --server.port 8501 --server.address 0.0.0.0
 | RAG 受控生成 | `rag/rag_service.py` |
 | 向量入库/检索 | `rag/vector_store.py` |
 | 离线评测 | `eval/run_eval.py`、`eval/retrieval_metrics.py` |
-| Golden Set | `eval/golden_set.jsonl`、`eval/golden_set.local.jsonl` |
+| 模型对比报告 | `eval/compare_reports.py` |
+| Golden Set | `eval/golden_set.jsonl`、`eval/golden_set.local.jsonl`、`eval/golden_set_daodejing.jsonl` |
 | 单测 | `tests/` |
 | 模型工厂 | `model/factory.py` |
 | 配置加载 | `utils/config_handler.py` |

@@ -1,0 +1,284 @@
+{
+  "reports": [
+    {
+      "name": "hybrid",
+      "path": "eval/results/eval-20261024-153000-dd-hybrid-v3.json",
+      "mode": "hybrid",
+      "collection": "agent_dd",
+      "rerank_model": "gte-rerank-v2",
+      "metrics": {
+        "recall@10": 0.442,
+        "hit@10": 0.7143,
+        "mrr@10": 0.423,
+        "ndcg@10": 0.3663,
+        "degraded_ratio": 0.0,
+        "latency_avg_ms": 336.5,
+        "latency_p95_ms": 516.8
+      }
+    },
+    {
+      "name": "qwen3",
+      "path": "eval/results/eval-20261024-153231-dd-qwen3.json",
+      "mode": "full",
+      "collection": "agent_dd",
+      "rerank_model": "qwen3-rerank",
+      "metrics": {
+        "recall@10": 0.5506,
+        "hit@10": 0.75,
+        "mrr@10": 0.4899,
+        "ndcg@10": 0.4626,
+        "degraded_ratio": 0.0,
+        "latency_avg_ms": 553.7,
+        "latency_p95_ms": 590.9
+      }
+    },
+    {
+      "name": "qwen3vl",
+      "path": "eval/results/eval-20261024-153302-dd-qwen3vl.json",
+      "mode": "full",
+      "collection": "agent_dd",
+      "rerank_model": "qwen3-vl-rerank",
+      "metrics": {
+        "recall@10": 0.5208,
+        "hit@10": 0.75,
+        "mrr@10": 0.5429,
+        "ndcg@10": 0.4633,
+        "degraded_ratio": 0.0,
+        "latency_avg_ms": 714.43,
+        "latency_p95_ms": 778.86
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "baseline": "hybrid",
+      "candidate": "qwen3",
+      "shared_queries": 32,
+      "wins": 9,
+      "losses": 5,
+      "ties": 18,
+      "top1_gain": 5,
+      "top1_loss": 2,
+      "avg_rr_delta": 0.058556,
+      "worst": [
+        {
+          "id": "dd-007",
+          "query": "老子如何描述万物的生成过程？",
+          "query_type": "semantic",
+          "delta_rr": -0.666667,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.333333,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "dd-021",
+          "query": "《道德经》中“上善若水”和“天下莫柔弱于水”分别强调水的什么特点？",
+          "query_type": "multi_hop",
+          "delta_rr": -0.666667,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.333333,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "dd-019",
+          "query": "老子如何描述“小国寡民”的社会？",
+          "query_type": "multi_condition",
+          "delta_rr": -0.166667,
+          "baseline_rr": 0.5,
+          "candidate_rr": 0.333333,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "dd-020",
+          "query": "老子如何描述“道”的无为与万物生成？",
+          "query_type": "multi_condition",
+          "delta_rr": -0.166667,
+          "baseline_rr": 0.333333,
+          "candidate_rr": 0.166667,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "dd-017",
+          "query": "老子说的“三宝”是哪三样？",
+          "query_type": "multi_condition",
+          "delta_rr": -0.05,
+          "baseline_rr": 0.25,
+          "candidate_rr": 0.2,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        }
+      ],
+      "best": [
+        {
+          "id": "dd-011",
+          "query": "“上善若水”的下一句是什么？",
+          "query_type": "identifier",
+          "delta_rr": 0.833333,
+          "baseline_rr": 0.166667,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "dd-013",
+          "query": "“祸兮福之所倚”的下一句是什么？",
+          "query_type": "identifier",
+          "delta_rr": 0.75,
+          "baseline_rr": 0.25,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "dd-024",
+          "query": "“为学日益”与“为道日损”共同表达了什么？",
+          "query_type": "multi_hop",
+          "delta_rr": 0.5,
+          "baseline_rr": 0.5,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "dd-012",
+          "query": "“治大国若烹小鲜”的下一句是什么？",
+          "query_type": "identifier",
+          "delta_rr": 0.5,
+          "baseline_rr": 0.5,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "dd-003",
+          "query": "治理大国应该像什么？",
+          "query_type": "semantic",
+          "delta_rr": 0.5,
+          "baseline_rr": 0.5,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        }
+      ]
+    },
+    {
+      "baseline": "hybrid",
+      "candidate": "qwen3vl",
+      "shared_queries": 32,
+      "wins": 11,
+      "losses": 3,
+      "ties": 18,
+      "top1_gain": 7,
+      "top1_loss": 3,
+      "avg_rr_delta": 0.104911,
+      "worst": [
+        {
+          "id": "dd-027",
+          "query": "黄元吉认为“治大国若烹小鲜”的关键是什么？",
+          "query_type": "semantic",
+          "delta_rr": -0.8,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.2,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "dd-021",
+          "query": "《道德经》中“上善若水”和“天下莫柔弱于水”分别强调水的什么特点？",
+          "query_type": "multi_hop",
+          "delta_rr": -0.666667,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.333333,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "dd-016",
+          "query": "“天网恢恢”的下一句是什么？",
+          "query_type": "identifier",
+          "delta_rr": -0.5,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.5,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "dd-001",
+          "query": "老子认为“道”可以用语言完全说清楚吗？",
+          "query_type": "semantic",
+          "delta_rr": 0.0,
+          "baseline_rr": 0.0,
+          "candidate_rr": 0.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "dd-002",
+          "query": "最高的善像什么？",
+          "query_type": "semantic",
+          "delta_rr": 0.0,
+          "baseline_rr": 0.0,
+          "candidate_rr": 0.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        }
+      ],
+      "best": [
+        {
+          "id": "dd-028",
+          "query": "黄元吉如何解释“祸兮福所倚”？",
+          "query_type": "semantic",
+          "delta_rr": 1.0,
+          "baseline_rr": 0.0,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "dd-011",
+          "query": "“上善若水”的下一句是什么？",
+          "query_type": "identifier",
+          "delta_rr": 0.833333,
+          "baseline_rr": 0.166667,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "dd-013",
+          "query": "“祸兮福之所倚”的下一句是什么？",
+          "query_type": "identifier",
+          "delta_rr": 0.75,
+          "baseline_rr": 0.25,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "dd-010",
+          "query": "知道满足会怎样？",
+          "query_type": "semantic",
+          "delta_rr": 0.666667,
+          "baseline_rr": 0.333333,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "dd-024",
+          "query": "“为学日益”与“为道日损”共同表达了什么？",
+          "query_type": "multi_hop",
+          "delta_rr": 0.5,
+          "baseline_rr": 0.5,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        }
+      ]
+    }
+  ]
+}

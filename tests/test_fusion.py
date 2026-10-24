@@ -44,6 +44,18 @@ class FusionTest(unittest.TestCase):
             {"$and": [{"doc_id": "a"}, {"scope_tags": '["public"]'}]},
         )
 
+    def test_is_included_filters_by_filename_keyword(self):
+        service = object.__new__(VectorStoreService)
+        service.include_keywords = ["道德经"]
+        service.exclude_keywords = []
+        self.assertTrue(service._is_included("data/《道德经》带讲解.pdf"))
+        self.assertFalse(service._is_included("data/论语.pdf"))
+
+        service.include_keywords = []
+        service.exclude_keywords = ["道德经"]
+        self.assertFalse(service._is_included("data/《道德经》带讲解.pdf"))
+        self.assertTrue(service._is_included("data/论语.pdf"))
+
 
 class CacheTest(unittest.TestCase):
     def test_set_get_and_evict(self):

@@ -14,3 +14,5 @@ separators: ["\n\n", "\n", "。", "！", "？", "；", ".", "!", "?", " ", ""]
 index_manifest: storage/index_manifest.json
 parent_store: storage/parents.json
 scope_tags: ["public"]
+# 默认 agent_v2 不收录道德经实验语料；道德经单独用 agent_dd 建库
+exclude_keywords: ["道德经"]

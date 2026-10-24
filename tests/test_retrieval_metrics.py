@@ -74,6 +74,15 @@ class MetricsTest(unittest.TestCase):
         self.assertEqual(resolved, {"c1"})
         self.assertEqual(missing, [])
 
+    def test_resolve_snippets_can_filter_short_chunks(self):
+        docs = [
+            _Doc("short", "学而时习之"),
+            _Doc("long", "学而时习之" + "很" * 100),
+        ]
+        resolved, missing = resolve_snippets(["学而时习之"], docs, min_chunk_chars=80)
+        self.assertEqual(resolved, {"long"})
+        self.assertEqual(missing, [])
+
 
 if __name__ == "__main__":
     unittest.main()

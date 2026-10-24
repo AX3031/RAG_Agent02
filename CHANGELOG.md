@@ -8,7 +8,7 @@
 
 ### Added
 
-- RAG 检索子 Agent：`rag/retrieval_service.py` —— Dense(Chroma) + Sparse(自研 BM25) → RRF(k=60) → `gte-rerank-v2` 精排 → 父子扩展 → 证据组装 → Answerability。
+- RAG 检索子 Agent：`rag/retrieval_service.py` —— Dense(Chroma) + Sparse(自研 BM25) → RRF(k=60) → rerank（初始 `gte-rerank-v2`，后切换 `qwen3-rerank`）→ 父子扩展 → 证据组装 → Answerability。
 - `rag/contract.py`：`evidence[] / answerable / status / degraded_stages / latency_ms / index_version` 契约与 5 态状态机；`validate_evidence_ids` 引用校验。
 - `rag/chunking.py`：结构化父子分块与确定性 `doc_id/version/chunk_id/parent_id`；子块 240 / overlap 40，父块 900。
 - `rag/index_store.py`：`IndexManifest`（文件→版本→块清单）与 `ParentStore`（父块），临时文件 + `os.replace` 原子写。
@@ -16,13 +16,17 @@
 - `rag/answerability.py`：qwen-flash YES/NO 判定 + 快速路径 + 阈值兜底 + 熔断。
 - `rag/telemetry.py`：`Trace`（request_id/trace_id/分段延迟/脱敏日志）与 TTL+LRU 缓存。
 - `eval/`：Golden Set（论语 50 + 本地需求文档 21）、Recall@K / HitRate@K / MRR@K / NDCG@K、随机基线、三模式评测、阈值校准、`results/baseline.json`。
-- `tests/`：35 条 stdlib unittest（指标、BM25、分块、契约、清单、RRF/缓存、Agent 拒答护栏）。
+- `tests/`：37 条 stdlib unittest（指标、BM25、分块、契约、清单、RRF/缓存、Agent 拒答护栏）。
 - `agent/tools/agent_tools.py`：`retrieve_knowledge(query)` 工具，返回结构化证据 JSON。
 - `agent/react_agent.py`：`_knowledge_insufficient` 确定性护栏——证据不足时强制输出「根据现有资料无法回答该问题」。
 - `docs/rag-improvement/`：进度备忘录 + 阶段 0-4 的入门讲解与反思；`06-长期改造经验与方法论.md`（长任务工作方法：开始、阶段门、复盘、效率与避免幻觉）。
+- `docs/rag-improvement/07-rerank模型对比报告.md`：qwen3-rerank / qwen3-vl-rerank / gte-rerank-v2 在同一索引与 Golden Set 下的对比、分数校准与选型建议。
+- `eval/compare_reports.py`：两份 eval 报告的逐 query 胜负、top-1 变化与指标对比。
+- `eval/golden_set_daodejing.jsonl`：32 条《道德经》评测集（原文 / 注家 / 多跳 / 负样本）。
+- `VectorStoreService` 支持自定义 `collection_name` / `index_manifest` / `parent_store` / `include_keywords` / `exclude_keywords` / `data_path`，用于分库实验。
 - `data/论语.pdf` 测试语料；`eval/prepare_local_corpus.py` 生成不纳入版本管理的需求文档语料。
 - `config/rag.yml` 新增 `rerank_model_name` 与 `retrieval:` 段（候选数、RRF、精排、Answerability、熔断、缓存）。
-- `config/chroma.yml` 新增 `parent_chunk_size`、`index_manifest`、`parent_store`、`scope_tags`。
+- `config/chroma.yml` 新增 `parent_chunk_size`、`index_manifest`、`parent_store`、`scope_tags`、`exclude_keywords`（默认排除道德经实验语料）。
 - `memorys/memory_factory.py`：`create_checkpointer(memory_mode)` 统一入口，`DEFAULT_MEMORY_MODE = "short_term"`、`MEMORY_MODE_LABELS`（界面文案 ↔ 模式值）。
 - `memorys/file_checkpointer.py`：`FileCheckpointSaver` —— 继承 LangGraph `InMemorySaver`，把 `storage/writes/blobs` 序列化为 JSON 并原子写入 `memorys/chat_history/agent_checkpoints.json`（`bytes ↔ base64`、`tuple ↔ 标签结构`、非字符串 dict 键 ↔ 键值对列表；临时文件 + `os.replace`；`threading.RLock`；进程内单例 `get_file_checkpointer()`）。
 - `agent/react_agent.py`：`ReactAgent(memory_mode=...)`、`clear_memory(thread_id)`、`load_ui_messages(thread_id)`；`_default_memory_mode()` 兼容读取 `USE_POSTGRES_CHECKPOINTER`。
@@ -36,8 +40,13 @@
 - Chroma 集合由 `agent` 改为 `agent_v2`，与旧脏集合隔离；切分参数由 200/20 改为子块 240/40、父块 900。
 - `prompts/rag_summarize.txt`：证据分隔符、evidence_id 引用、非法引用约束。
 - `prompts/main_prompt.txt`：新增 `retrieve_knowledge`、证据不足硬约束、引用出处要求。
+- `config/rag.yml`：默认 `rerank_model_name` 由 `gte-rerank-v2` 切换为 `qwen3-rerank`（本轮对比 R@10 0.8061 / MRR 0.7722 / 433ms）；Answerability 阈值按 qwen3 分布调整为 `0.40 / 0.40 / 0.85 / 0.40`（threshold / fallback / high / low）。
 - `README.md`、`docs/PROJECT_OVERVIEW.md`、`docs/ARCHITECTURE.md`、`docs/architecture.svg`、`docs/rag-pipeline.svg` 同步 RAG 改造。
+- `eval/run_eval.py` 支持 `--collection` / `--index-manifest` / `--parent-store` / `--include-keywords` / `--data-path` / `--rerank-model` / `--answerability-mode` / `--tag`；带 `--tag` 的模型对比不覆盖 baseline。
+- `eval/retrieval_metrics.py` 的 `resolve_snippets` 支持 `min_chunk_chars`，避免短标题/目录碎片被误标为相关块。
+- `tests/` 增至 37 条（新增 `min_chunk_chars` 与文件名过滤测试）。
 - `.gitignore` 增加 `storage/`、`chroma_db/`、`logs/`、`md5.text`、本地评测集与语料。
+- `.gitignore` 增加 `data/*.pdf`：外部语料 PDF 不入版本库（体积大、部分为在版出版物的扫描件；本轮道德经实验的两本语料共 6.1MB 仅保留本地）。已跟踪的 `data/论语.pdf`、`data/测试pdf2.pdf` 不受影响；`eval/golden_set_daodejing.jsonl` 与对比报告仍入库，所以评测可复现、只缺原始 PDF。
 - 解除运行产物的历史跟踪（技术债 TD-16）：`chroma_db/`、`logs/`、`md5.text`、`memorys/chat_history/`、各模块 `__pycache__/*.pyc` 共 29 个文件移出 Git 索引，本地文件保留；`.gitignore` 规则自此生效，`docs/ARCHITECTURE.md` 10.2 记下做法与沙箱拦截 `rm` 的踩坑。
 - `docs/rag-improvement/06-长期改造经验与方法论.md` 已同步进索引：`AGENTS.md` 阅读顺序、`README.md` 文档地图、`docs/PROJECT_OVERVIEW.md` 问题索引。
 - 三种会话记忆统一走 LangGraph checkpointer（`short_term` → `InMemorySaver`；`file` → `FileCheckpointSaver`；`postgres` → 原有 `PostgresSaver`）；`execute_stream` 每次只传当前一条 `HumanMessage`，历史由 `thread_id` 自动恢复。

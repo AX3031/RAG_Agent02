@@ -110,7 +110,7 @@ RAG 已改造为**可被主 Agent 调用的检索子 Agent**：输出结构化 `
 | 配置 | PyYAML / python-dotenv | 6.0.3 / 1.2.3 | YAML 配置、`.env` 加载 |
 | HTTP 客户端 | requests | 2.34.2 | 百度联网搜索 |
 
-模型：`qwen3.5-flash`（对话，经 DashScope OpenAI 兼容模式）；`text-embedding-v4`（向量化）；`glm-5`（备用对话模型，主模型失败时自动降级）；`qwen-flash`（Answerability 判定，低延迟）；`gte-rerank-v2`（精排）。
+模型：`qwen3.5-flash`（对话，经 DashScope OpenAI 兼容模式）；`text-embedding-v4`（向量化）；`glm-5`（备用对话模型，主模型失败时自动降级）；`qwen-flash`（Answerability 判定，低延迟）；`qwen3-rerank`（当前默认精排；`gte-rerank-v2` 为历史对比，`qwen3-vl-rerank` 为排序优先备选，见 `docs/rag-improvement/07-rerank模型对比报告.md`）。
 
 ---
 
@@ -161,7 +161,7 @@ uv run -m rag.vector_store
 uv run -m rag.vector_store --rebuild
 ```
 
-该命令扫描 `data/` 下的 `.txt`/`.pdf`，做**父子分块**后写入 `chroma_db/`（默认集合 `agent_v2`），并在 `storage/index_manifest.json` 记录「文件 → 版本 → chunk_id」清单。旧的 `md5.text` 不再作为权威去重依据。
+该命令扫描 `data/` 下的 `.txt`/`.pdf`，做**父子分块**后写入 `chroma_db/`（默认集合 `agent_v2`），并在 `storage/index_manifest.json` 记录「文件 → 版本 → chunk_id」清单。旧的 `md5.text` 不再作为权威去重依据。默认 `exclude_keywords: ["道德经"]` 会把两版《道德经》排除在 `agent_v2` 之外；它们用 `agent_dd` 单独建库（见 4.7）。
 
 ### 4.5 启动对话界面
 
@@ -199,11 +199,15 @@ uv run -m eval.run_eval --top-k 10 --save-baseline
 # 用 Golden Set 校准可回答性阈值
 uv run -m eval.calibrate_threshold
 
+# 模型对比（同一索引；带 tag 不覆盖 baseline）
+uv run -m eval.run_eval --modes full --rerank-model qwen3-rerank --tag rerank-qwen3
+uv run -m eval.compare_reports --baseline hybrid=eval/results/eval-xxx.json --candidate qwen3=eval/results/eval-yyy.json
+
 # 离线单测（不需要网络/模型）
 uv run -m unittest discover -s tests -v
 ```
 
-Golden Set：`eval/golden_set.jsonl`（论语 50 条，可复现）+ `eval/golden_set.local.jsonl`（需求文档 21 条，本地生成、不提交）。指标定义见 [docs/rag-improvement/01-阶段0-评估标尺.md](docs/rag-improvement/01-阶段0-评估标尺.md)。
+Golden Set：`eval/golden_set.jsonl`（论语 50 条，可复现）+ `eval/golden_set.local.jsonl`（需求文档 21 条，本地生成、不提交）；另有 `eval/golden_set_daodejing.jsonl`（道德经 32 条，用于第二语料/rerank 对比，集合 `agent_dd`）。指标定义见 [docs/rag-improvement/01-阶段0-评估标尺.md](docs/rag-improvement/01-阶段0-评估标尺.md)，模型对比见 [07-rerank模型对比报告](docs/rag-improvement/07-rerank模型对比报告.md)。
 
 ---
 
@@ -238,11 +242,14 @@ project2/
 ├── eval/
 │   ├── golden_set.jsonl        # ✅ 论语 Golden Set（50 条，可提交）
 │   ├── golden_set.local.jsonl  # 🧪 需求文档 Golden Set（本地，不入库）
+│   ├── golden_set_daodejing.jsonl # ✅ 道德经 Golden Set（32 条）
+│   ├── prepare_local_corpus.py # ✅ 本地需求文档转语料
 │   ├── retrieval_metrics.py    # ✅ Recall/MRR/NDCG/随机基线
 │   ├── run_eval.py             # ✅ 三模式离线评测
 │   ├── calibrate_threshold.py  # ✅ 可回答性阈值校准
+│   ├── compare_reports.py      # ✅ 两份报告的逐 query 对比
 │   └── results/baseline.json   # ✅ 基准快照
-├── tests/                      # ✅ 35 条 stdlib unittest
+├── tests/                      # ✅ 37 条 stdlib unittest
 ├── model/
 │   └── factory.py              # ✅ Chat / Embedding 工厂
 ├── memorys/
@@ -259,8 +266,8 @@ project2/
 │   └── logger_handler.py       # ⚙️ 控制台 + 按日文件日志
 ├── config/                     # ⚙️ rag / chroma / prompts / agent 配置
 ├── prompts/                    # ⚙️ 系统提示词、RAG 提示词、报告提示词
-├── data/                       # 原始知识文件（论语.pdf 等）；external/ 下为业务 CSV
-├── chroma_db/                  # Chroma 持久化目录（已加入 .gitignore；历史跟踪需手动清理）
+├── data/                       # 原始知识文件（论语、道德经等）；external/ 下为业务 CSV
+├── chroma_db/                  # Chroma 持久化目录（已移出 Git 索引，本地保留）
 ├── storage/                    # 索引清单 / 父块（运行时生成，不入库）
 ├── logs/                       # 按日日志
 ├── env_patch/                  # ⚙️ 虚拟环境补丁（.pth + sitecustomize.py）
@@ -299,6 +306,7 @@ project2/
 | 换对话模型 / Embedding 模型 | `config/rag.yml` + `model/factory.py` |
 | 设置备用对话模型 | `config/rag.yml` 的 `backup_chat_model_name` |
 | 调 Dense/Sparse 候选数、RRF、精排、可回答性 | `config/rag.yml` 的 `retrieval:` 段 |
+| 换 rerank 模型 | `config/rag.yml` 的 `rerank_model_name`（换后重跑 Golden Set 并重新校准阈值） |
 | 调切分大小、集合名、索引清单路径 | `config/chroma.yml` |
 | 换知识库目录、文件类型 | `config/chroma.yml` 的 `data_path` / `allow_knowledge_file_type` |
 | 换外部 CSV 路径 | `config/agent.yml` |
@@ -320,8 +328,8 @@ project2/
 2. **流式输出是“消息块级”而非 token 级**：`stream_mode="values"` 只输出 `AIMessage` 文本，用户问题与工具中间结果不再回显；UI 只保存最后一个 chunk。
 3. **PII 脱敏覆盖不完整**：`PIIMiddleware` 只处理模型输入/输出，日志与缓存中的敏感信息尚未脱敏。
 4. **外部数据示例为空**：`data/external/records.csv` 为空，`fetch_external_data` 会查不到记录；CSV 解析也未处理带逗号的引号字段。
-5. **rerank 依赖外部额度**：DashScope `gte-rerank-v2` 免费额度耗尽时会降级为 RRF 排序（`status=degraded`），不会报错但精度下降。
-6. **Golden Set 规模与一致性不足**：论语 50 条 + 需求文档 21 条，暂无 holdout 与双人标注 κ。
+5. **rerank 依赖外部额度**：任一 rerank 模型（`qwen3-rerank` / `gte-rerank-v2` / `qwen3-vl-rerank`）免费额度耗尽时会降级为 RRF 排序（`status=degraded`），不会报错但精度下降。
+6. **Golden Set 规模与一致性不足**：论语 50 条 + 需求文档 21 条 + 道德经 32 条，暂无 holdout 与双人标注 κ。
 7. **ACL/多租户只有接口形态**：`scope` 可按元数据过滤，但没有真实鉴权上下文。
 8. **检索分块按字符而非 tokenizer**：`chunk_size=240` 是字符数，未接 tiktoken。
 
@@ -344,6 +352,7 @@ project2/
 | [docs/rag-improvement/04-阶段3-可回答性与工程化.md](docs/rag-improvement/04-阶段3-可回答性与工程化.md) | Answerability、trace、缓存、注入防御 |
 | [docs/rag-improvement/05-阶段4-接入与验收.md](docs/rag-improvement/05-阶段4-接入与验收.md) | Agent 接入、测试、验收与整体反思 |
 | [docs/rag-improvement/06-长期改造经验与方法论.md](docs/rag-improvement/06-长期改造经验与方法论.md) | 长任务工作方法：开始、阶段门、复盘、效率与避免幻觉 |
+| [docs/rag-improvement/07-rerank模型对比报告.md](docs/rag-improvement/07-rerank模型对比报告.md) | qwen3-rerank / qwen3-vl-rerank / gte-rerank-v2 对比与选型建议 |
 | [AGENTS.md](AGENTS.md) | AI 阅读约定（可选，供编码助手使用） |
 | [CHANGELOG.md](CHANGELOG.md) | 重要变更：加了什么 / 改了什么 / 修了什么 |
 

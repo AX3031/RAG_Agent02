@@ -24,9 +24,9 @@
 | dashscope | 1.27.5 | 通义千问 / Embedding / gte-rerank SDK |
 | streamlit | 1.64.0 | 对话 UI 与流式渲染 |
 
-模型：`qwen3.5-flash`（对话）、`text-embedding-v4`（向量化）、`qwen-flash`（Answerability 判定）、`gte-rerank-v2`（精排）。
+模型：`qwen3.5-flash`（对话）、`text-embedding-v4`（向量化）、`qwen-flash`（Answerability 判定）、`qwen3-rerank`（当前默认精排；`gte-rerank-v2` 历史对比、`qwen3-vl-rerank` 排序优先备选）。
 
-评测：Golden Set 71 条（论语 50 + 本地需求文档 21），stdlib 实现 Recall@10 / MRR@10 / NDCG@10。
+评测：Golden Set 71 条（论语 50 + 本地需求文档 21）+ 道德经 32 条，stdlib 实现 Recall@10 / MRR@10 / NDCG@10。
 
 ## 3. 分层结构
 
@@ -52,7 +52,7 @@
 
 **RAG 入库**：`data/*.txt|pdf` → `TextLoader`/`PyPDFLoader` → 结构化**父子分块**（子块 240 字 / overlap 40；父块 900 字）→ 每个块写确定性 `chunk_id` 与 `doc_id/version/parent_id/page/title_path` → `DashScopeEmbeddings` → `Chroma`（collection `agent_v2`）。`storage/index_manifest.json` 记录文件→版本→块清单；文件变化时先写新版本、再删旧块；磁盘删除可 prune。旧 `md5.text` 不再是权威清单。
 
-**RAG 检索**：主 Agent 调用 `retrieve_knowledge(query)` 或 `rag_summarize(query)` → Dense（Chroma，k=15）+ Sparse（自研 BM25，k=15）→ RRF(k=60) → `gte-rerank-v2` 精排 → 按 `parent_id` 父子扩展 → 证据组装（总数/长度上限）→ Answerability 判定（qwen-flash + 阈值兜底 + 熔断）→ 返回 `evidence[] + answerable + status + trace`。纯检索 P95 约 300ms；含 rerank + Answerability 的平均约 700ms。
+**RAG 检索**：主 Agent 调用 `retrieve_knowledge(query)` 或 `rag_summarize(query)` → Dense（Chroma，k=15）+ Sparse（自研 BM25，k=15）→ RRF(k=60) → `qwen3-rerank` 精排（可配置；`gte-rerank-v2` / `qwen3-vl-rerank` 为对比项）→ 按 `parent_id` 父子扩展 → 证据组装（总数/长度上限）→ Answerability 判定（qwen-flash + 阈值兜底 + 熔断）→ 返回 `evidence[] + answerable + status + trace`。纯检索 P95 约 300ms；含 rerank + Answerability 的平均约 700ms。
 
 **报告场景**：模型调用 `fill_context_for_report` → `monitor_tool` 设置 `runtime.context["report"]=True` → 下一次模型调用由 `report_prompt_switch` 切换到 `report_prompt.txt`。标记只在本次请求内有效。
 
@@ -72,7 +72,7 @@ storage/      索引清单与父块（运行时生成，不入库）
 memorys/      记忆方式工厂 + 短期/JSON/PostgreSQL checkpointer
 docs/         架构文档、SVG 与 rag-improvement 分阶段讲解
 env_patch/    .pth + sitecustomize.py
-tests/        35 条 stdlib unittest
+tests/        37 条 stdlib unittest
 ```
 
 ## 7. 关键约束
@@ -97,6 +97,7 @@ tests/        35 条 stdlib unittest
 | RAG 怎么评测/调参？ | [docs/rag-improvement/01-阶段0-评估标尺.md](rag-improvement/01-阶段0-评估标尺.md) |
 | 证据契约/索引更新？ | [docs/rag-improvement/02-阶段1-证据契约与索引平面.md](rag-improvement/02-阶段1-证据契约与索引平面.md) |
 | 长任务怎么做、怎么复盘？ | [docs/rag-improvement/06-长期改造经验与方法论.md](rag-improvement/06-长期改造经验与方法论.md) |
+| rerank 模型怎么选？ | [docs/rag-improvement/07-rerank模型对比报告.md](rag-improvement/07-rerank模型对比报告.md) |
 | 报告场景怎么切换？ | [ARCHITECTURE 第 8 节](ARCHITECTURE.md#8-报告场景与动态提示词) |
 | 配置在哪改？ | [ARCHITECTURE 第 9 节](ARCHITECTURE.md#9-配置体系) + [README 配置速查](../README.md#7-配置入口速查) |
 | 想加工具/上传/记忆？ | [ARCHITECTURE 第 13 节](ARCHITECTURE.md#13-扩展指南) |

@@ -21,3 +21,7 @@ md5.text
 # 本地评测集与单次评测快照（baseline.json 保留）
 eval/golden_set.local.jsonl
 eval/results/eval-*.json
+
+# 语料 PDF：体积大且部分为在版出版物的扫描件，不入版本库
+# 已跟踪的 `data/论语.pdf`、`data/测试pdf2.pdf` 不受此规则影响
+data/*.pdf

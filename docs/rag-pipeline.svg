@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="840" viewBox="0 0 1600 840" role="img" aria-labelledby="ragTitle ragDesc">
   <title id="ragTitle">RAG 数据流：知识入库与混合检索</title>
-  <desc id="ragDesc">上半部分为离线知识入库流水线（文件发现、加载、父子分块、稳定 chunk_id、向量化、写入 Chroma 与索引清单），下半部分为在线检索链路（retrieve_knowledge 工具、Dense+BM25、RRF、gte-rerank、父子扩展、Answerability、证据契约）。</desc>
+  <desc id="ragDesc">上半部分为离线知识入库流水线（文件发现、加载、父子分块、稳定 chunk_id、向量化、写入 Chroma 与索引清单），下半部分为在线检索链路（retrieve_knowledge 工具、Dense+BM25、RRF、qwen3-rerank、父子扩展、Answerability、证据契约）。</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
@@ -106,7 +106,7 @@
 
     <rect x="776" y="460" width="220" height="84" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
     <text x="790" y="484" font-size="14" font-weight="700" fill="#0f172a">RRF + 精排</text>
-    <text x="790" y="506" font-size="11" fill="#475569">RRF(k=60) → gte-rerank-v2</text>
+    <text x="790" y="506" font-size="11" fill="#475569">RRF(k=60) → qwen3-rerank</text>
     <text x="790" y="524" font-size="11" fill="#64748b">失败/额度耗尽 → 降级 RRF</text>
 
     <rect x="1036" y="460" width="220" height="84" rx="9" fill="#ffffff" stroke="#34d399" filter="url(#shadow)"/>
@@ -133,7 +133,7 @@
     <path d="M1296 630 H381 V544" fill="none" stroke="#059669" stroke-width="1.8" marker-end="url(#arrowBack)"/>
     <text x="700" y="648" font-size="11" fill="#059669" text-anchor="middle">契约返回给 Agent → 受控生成或拒答（证据不足时强制拒答）</text>
 
-    <text x="56" y="682" font-size="10.5" fill="#64748b">检索：Dense(Chroma) + Sparse(BM25) → RRF(k=60) → gte-rerank-v2 → 父块扩展 → Answerability（qwen-flash）。</text>
+    <text x="56" y="682" font-size="10.5" fill="#64748b">检索：Dense(Chroma) + Sparse(BM25) → RRF(k=60) → qwen3-rerank → 父块扩展 → Answerability（qwen-flash）。</text>
     <text x="56" y="702" font-size="10.5" fill="#64748b">契约：status=ok/no_evidence/degraded/denied/error；降级阶段写入 degraded_stages；trace 只记 query_hash 与 evidence_id。</text>
     <text x="56" y="722" font-size="10.5" fill="#64748b">提示词约束：事实忠实、证据不足拒答、引用编号、指令隔离（prompts/rag_summarize.txt）。</text>
 

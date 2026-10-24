@@ -29,6 +29,7 @@ def resolve_snippets(
     snippets: list[str],
     documents: list,
     max_matches_per_snippet: int = 5,
+    min_chunk_chars: int = 0,
 ) -> tuple[set[str], list[str]]:
     """
     把证据片段解析成 chunk_id 集合。
@@ -51,7 +52,14 @@ def resolve_snippets(
         # 单个汉字会过度匹配，但单个英文/希腊字符（如 κ、v）是有效标识符
         if len(target) < 2 and re.search(r"[\u4e00-\u9fff]", snippet):
             return False
-        matches = [(cid, length) for cid, text, length in normalized_docs if cid and target in text]
+        matches = [
+            (cid, length)
+            for cid, text, length in normalized_docs
+            if cid and target in text and length >= min_chunk_chars
+        ]
+        if not matches and min_chunk_chars > 0:
+            # 语料里可能只有短块包含该片段，退化为不过滤长度
+            matches = [(cid, length) for cid, text, length in normalized_docs if cid and target in text]
         if matches:
             if len(matches) > max_matches_per_snippet:
                 matches = sorted(matches, key=lambda item: item[1])[:max_matches_per_snippet]

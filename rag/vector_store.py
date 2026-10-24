@@ -28,24 +28,37 @@ from utils.path_tool import get_abs_path, get_project_root
 
 
 class VectorStoreService:
-    def __init__(self):
+    def __init__(
+        self,
+        collection_name: str | None = None,
+        index_manifest: str | None = None,
+        parent_store: str | None = None,
+        include_keywords: list[str] | None = None,
+        exclude_keywords: list[str] | None = None,
+        data_path: str | None = None,
+    ):
         self.index_version = compute_index_version(
             embedding_model=rag_conf["embedding_model_name"],
             chunk_size=chroma_conf["chunk_size"],
             chunk_overlap=chroma_conf["chunk_overlap"],
             parent_size=chroma_conf["parent_chunk_size"],
         )
-        self.collection_name = chroma_conf["collection_name"]
+        self.collection_name = collection_name or chroma_conf["collection_name"]
+        self.data_path = data_path or chroma_conf["data_path"]
+        self.include_keywords = [item for item in (include_keywords or []) if item]
+        self.exclude_keywords = [
+            item for item in (exclude_keywords if exclude_keywords is not None else chroma_conf.get("exclude_keywords", [])) if item
+        ]
         self.vector_store = Chroma(
             collection_name=self.collection_name,
             embedding_function=embed_model,
             persist_directory=get_abs_path(chroma_conf["persist_directory"]),
         )
         self.manifest = IndexManifest(
-            get_abs_path(chroma_conf["index_manifest"]), self.index_version
+            index_manifest or get_abs_path(chroma_conf["index_manifest"]), self.index_version
         )
         self.parent_store = ParentStore(
-            get_abs_path(chroma_conf["parent_store"]), self.index_version
+            parent_store or get_abs_path(chroma_conf["parent_store"]), self.index_version
         )
         self._lock = threading.RLock()
 
@@ -107,9 +120,11 @@ class VectorStoreService:
         - prune=True 时，清理磁盘上已不存在的文件。
         """
         report = {"indexed": [], "skipped": [], "failed": [], "pruned": []}
-        data_root = get_abs_path(chroma_conf["data_path"])
+        data_root = get_abs_path(self.data_path)
         allowed = tuple(chroma_conf["allow_knowledge_file_type"])
         paths = listdir_with_allowed_type(data_root, allowed)
+        if self.include_keywords or self.exclude_keywords:
+            paths = tuple(path for path in paths if self._is_included(path))
 
         with self._lock:
             for abs_path in paths:
@@ -248,6 +263,15 @@ class VectorStoreService:
             return pdf_loader(abs_path)
         return []
 
+    def _is_included(self, abs_path: str) -> bool:
+        """文件名过滤：include 优先；否则应用 exclude（用于隔离道德经实验语料）。"""
+        name = os.path.basename(abs_path)
+        if self.include_keywords:
+            return any(keyword in name for keyword in self.include_keywords)
+        if self.exclude_keywords:
+            return not any(keyword in name for keyword in self.exclude_keywords)
+        return True
+
     def _delete_ids(self, ids: list[str]) -> None:
         if not ids:
             return
@@ -281,9 +305,34 @@ def main() -> None:
     parser.add_argument("--rebuild", action="store_true", help="清空当前集合并全量重建")
     parser.add_argument("--no-prune", action="store_true", help="不清理磁盘上已删除文件对应的索引")
     parser.add_argument("--delete-doc", default=None, help="按 doc_id 删除一篇文档")
+    parser.add_argument("--collection", default=None, help="集合名（默认读 config/chroma.yml）")
+    parser.add_argument("--index-manifest", default=None, help="索引清单路径")
+    parser.add_argument("--parent-store", default=None, help="父块存储路径")
+    parser.add_argument("--include-keywords", default=None, help="只索引文件名包含这些关键词的文件（逗号分隔）")
+    parser.add_argument("--exclude-keywords", default=None, help="跳过文件名包含这些关键词的文件（逗号分隔；默认读 config/chroma.yml）")
+    parser.add_argument("--data-path", default=None, help="知识文件目录（默认 data）")
     args = parser.parse_args()
 
-    service = VectorStoreService()
+    include_keywords = None
+    if args.include_keywords:
+        include_keywords = [item.strip() for item in args.include_keywords.split(",") if item.strip()]
+    exclude_keywords = None
+    if args.exclude_keywords:
+        exclude_keywords = [item.strip() for item in args.exclude_keywords.split(",") if item.strip()]
+
+    def _abs(path: str | None) -> str | None:
+        if not path:
+            return None
+        return path if os.path.isabs(path) else get_abs_path(path)
+
+    service = VectorStoreService(
+        collection_name=args.collection,
+        index_manifest=_abs(args.index_manifest),
+        parent_store=_abs(args.parent_store),
+        include_keywords=include_keywords,
+        exclude_keywords=exclude_keywords,
+        data_path=_abs(args.data_path),
+    )
     if args.delete_doc:
         ok = service.delete_document(args.delete_doc)
         print("deleted" if ok else "not found")

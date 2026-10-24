@@ -1,0 +1,415 @@
+{
+  "reports": [
+    {
+      "name": "hybrid",
+      "path": "eval/results/eval-20261024-153111-v2-hybrid-current.json",
+      "mode": "hybrid",
+      "collection": "agent_v2",
+      "rerank_model": "gte-rerank-v2",
+      "metrics": {
+        "recall@10": 0.7041,
+        "hit@10": 0.8305,
+        "mrr@10": 0.5962,
+        "ndcg@10": 0.5752,
+        "degraded_ratio": 0.0,
+        "latency_avg_ms": 222.21,
+        "latency_p95_ms": 405.6
+      }
+    },
+    {
+      "name": "gte",
+      "path": "eval/results/eval-20261023-225811.json",
+      "mode": "full",
+      "collection": null,
+      "rerank_model": null,
+      "metrics": {
+        "recall@10": 0.7439,
+        "hit@10": 0.8644,
+        "mrr@10": 0.6786,
+        "ndcg@10": 0.6547,
+        "degraded_ratio": null,
+        "latency_avg_ms": 703.87,
+        "latency_p95_ms": 916.34
+      }
+    },
+    {
+      "name": "qwen3",
+      "path": "eval/results/eval-20261024-153048-rerank-qwen3.json",
+      "mode": "full",
+      "collection": "agent_v2",
+      "rerank_model": "qwen3-rerank",
+      "metrics": {
+        "recall@10": 0.8061,
+        "hit@10": 0.8983,
+        "mrr@10": 0.7722,
+        "ndcg@10": 0.7437,
+        "degraded_ratio": 0.0,
+        "latency_avg_ms": 433.23,
+        "latency_p95_ms": 568.32
+      }
+    },
+    {
+      "name": "qwen3vl",
+      "path": "eval/results/eval-20261024-153204-rerank-qwen3vl.json",
+      "mode": "full",
+      "collection": "agent_v2",
+      "rerank_model": "qwen3-vl-rerank",
+      "metrics": {
+        "recall@10": 0.8059,
+        "hit@10": 0.8983,
+        "mrr@10": 0.7993,
+        "ndcg@10": 0.7667,
+        "degraded_ratio": 0.0,
+        "latency_avg_ms": 622.52,
+        "latency_p95_ms": 907.49
+      }
+    }
+  ],
+  "comparisons": [
+    {
+      "baseline": "hybrid",
+      "candidate": "gte",
+      "shared_queries": 71,
+      "wins": 17,
+      "losses": 5,
+      "ties": 49,
+      "top1_gain": 9,
+      "top1_loss": 2,
+      "avg_rr_delta": 0.068444,
+      "worst": [
+        {
+          "id": "ly-028",
+          "query": "孔子认为君子和小人在待人接物上有哪些不同？",
+          "query_type": "multi_condition",
+          "delta_rr": -0.8,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.2,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "rq-015",
+          "query": "parent_id 字段的用途是什么？",
+          "query_type": "identifier",
+          "delta_rr": -0.5,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.5,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "rq-010",
+          "query": "证据不足时子 Agent 应该返回什么？",
+          "query_type": "semantic",
+          "delta_rr": -0.3,
+          "baseline_rr": 0.5,
+          "candidate_rr": 0.2,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "ly-001",
+          "query": "孔子认为学习之后应该怎么做？",
+          "query_type": "semantic",
+          "delta_rr": -0.25,
+          "baseline_rr": 0.25,
+          "candidate_rr": 0.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "rq-016",
+          "query": "scope_tags 为什么要前置过滤？",
+          "query_type": "identifier",
+          "delta_rr": -0.138889,
+          "baseline_rr": 0.25,
+          "candidate_rr": 0.111111,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        }
+      ],
+      "best": [
+        {
+          "id": "rq-006",
+          "query": "生产期推荐的可观测方案是什么？",
+          "query_type": "semantic",
+          "delta_rr": 0.833333,
+          "baseline_rr": 0.166667,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "ly-019",
+          "query": "“听其言而观其行”出自哪段话？",
+          "query_type": "identifier",
+          "delta_rr": 0.833333,
+          "baseline_rr": 0.166667,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "rq-011",
+          "query": "contract_version 字段的作用是什么？",
+          "query_type": "identifier",
+          "delta_rr": 0.8,
+          "baseline_rr": 0.2,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "rq-012",
+          "query": "DENIED 状态的语义是什么？",
+          "query_type": "identifier",
+          "delta_rr": 0.666667,
+          "baseline_rr": 0.333333,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "ly-006",
+          "query": "孔子认为君子和小人对待义与利有什么不同？",
+          "query_type": "semantic",
+          "delta_rr": 0.666667,
+          "baseline_rr": 0.333333,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        }
+      ]
+    },
+    {
+      "baseline": "hybrid",
+      "candidate": "qwen3",
+      "shared_queries": 71,
+      "wins": 22,
+      "losses": 5,
+      "ties": 44,
+      "top1_gain": 16,
+      "top1_loss": 3,
+      "avg_rr_delta": 0.146261,
+      "worst": [
+        {
+          "id": "ly-028",
+          "query": "孔子认为君子和小人在待人接物上有哪些不同？",
+          "query_type": "multi_condition",
+          "delta_rr": -0.875,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.125,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "ly-036",
+          "query": "孔子在《雍也》和《颜渊》中如何谈“仁”？",
+          "query_type": "multi_hop",
+          "delta_rr": -0.5,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.5,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "rq-015",
+          "query": "parent_id 字段的用途是什么？",
+          "query_type": "identifier",
+          "delta_rr": -0.5,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.5,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "rq-010",
+          "query": "证据不足时子 Agent 应该返回什么？",
+          "query_type": "semantic",
+          "delta_rr": -0.166667,
+          "baseline_rr": 0.5,
+          "candidate_rr": 0.333333,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "rq-016",
+          "query": "scope_tags 为什么要前置过滤？",
+          "query_type": "identifier",
+          "delta_rr": -0.107143,
+          "baseline_rr": 0.25,
+          "candidate_rr": 0.142857,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        }
+      ],
+      "best": [
+        {
+          "id": "ly-005",
+          "query": "孔子说自己十五岁到七十岁分别达到什么境界？",
+          "query_type": "semantic",
+          "delta_rr": 1.0,
+          "baseline_rr": 0.0,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "ly-030",
+          "query": "孔子如何描述自己学习、教学和做人的态度？",
+          "query_type": "multi_condition",
+          "delta_rr": 0.888889,
+          "baseline_rr": 0.111111,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "rq-006",
+          "query": "生产期推荐的可观测方案是什么？",
+          "query_type": "semantic",
+          "delta_rr": 0.833333,
+          "baseline_rr": 0.166667,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "ly-019",
+          "query": "“听其言而观其行”出自哪段话？",
+          "query_type": "identifier",
+          "delta_rr": 0.833333,
+          "baseline_rr": 0.166667,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "ly-002",
+          "query": "曾子每天反省自己哪些方面？",
+          "query_type": "semantic",
+          "delta_rr": 0.833333,
+          "baseline_rr": 0.166667,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        }
+      ]
+    },
+    {
+      "baseline": "hybrid",
+      "candidate": "qwen3vl",
+      "shared_queries": 71,
+      "wins": 20,
+      "losses": 5,
+      "ties": 46,
+      "top1_gain": 17,
+      "top1_loss": 2,
+      "avg_rr_delta": 0.168757,
+      "worst": [
+        {
+          "id": "ly-028",
+          "query": "孔子认为君子和小人在待人接物上有哪些不同？",
+          "query_type": "multi_condition",
+          "delta_rr": -0.5,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.5,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "rq-015",
+          "query": "parent_id 字段的用途是什么？",
+          "query_type": "identifier",
+          "delta_rr": -0.5,
+          "baseline_rr": 1.0,
+          "candidate_rr": 0.5,
+          "baseline_top1_relevant": true,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "ly-039",
+          "query": "《为政》与《子路》中关于“政”的论述",
+          "query_type": "multi_hop",
+          "delta_rr": -0.166667,
+          "baseline_rr": 0.5,
+          "candidate_rr": 0.333333,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "rq-010",
+          "query": "证据不足时子 Agent 应该返回什么？",
+          "query_type": "semantic",
+          "delta_rr": -0.166667,
+          "baseline_rr": 0.5,
+          "candidate_rr": 0.333333,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        },
+        {
+          "id": "rq-016",
+          "query": "scope_tags 为什么要前置过滤？",
+          "query_type": "identifier",
+          "delta_rr": -0.107143,
+          "baseline_rr": 0.25,
+          "candidate_rr": 0.142857,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": false
+        }
+      ],
+      "best": [
+        {
+          "id": "ly-005",
+          "query": "孔子说自己十五岁到七十岁分别达到什么境界？",
+          "query_type": "semantic",
+          "delta_rr": 1.0,
+          "baseline_rr": 0.0,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "ly-030",
+          "query": "孔子如何描述自己学习、教学和做人的态度？",
+          "query_type": "multi_condition",
+          "delta_rr": 0.888889,
+          "baseline_rr": 0.111111,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "ly-012",
+          "query": "孔子认为工匠要做好工作需要什么？",
+          "query_type": "semantic",
+          "delta_rr": 0.875,
+          "baseline_rr": 0.125,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "ly-010",
+          "query": "孔子用什么比喻时光流逝？",
+          "query_type": "semantic",
+          "delta_rr": 0.875,
+          "baseline_rr": 0.125,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        },
+        {
+          "id": "rq-006",
+          "query": "生产期推荐的可观测方案是什么？",
+          "query_type": "semantic",
+          "delta_rr": 0.833333,
+          "baseline_rr": 0.166667,
+          "candidate_rr": 1.0,
+          "baseline_top1_relevant": false,
+          "candidate_top1_relevant": true
+        }
+      ]
+    }
+  ]
+}

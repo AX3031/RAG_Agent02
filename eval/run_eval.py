@@ -57,7 +57,12 @@ def load_golden(paths: list[Path]) -> list[dict]:
     return rows
 
 
-def build_mode_config(mode: str, top_k: int) -> dict:
+def build_mode_config(
+    mode: str,
+    top_k: int,
+    rerank_model: str | None = None,
+    answerability_mode: str | None = None,
+) -> dict:
     conf = copy.deepcopy(rag_conf)
     retrieval = conf["retrieval"]
     retrieval["enable_sparse"] = mode in {"hybrid", "full"}
@@ -67,15 +72,28 @@ def build_mode_config(mode: str, top_k: int) -> dict:
     retrieval["answerability_threshold"] = 0.0
     retrieval["max_context_chars"] = 10_000_000  # 评测不看上下文裁剪
     retrieval["cache_size"] = 0
-    # 只有 full 模式需要评估 answerability；dense/hybrid 不调用额外 LLM
-    retrieval["answerability_mode"] = "llm" if mode == "full" else "threshold"
+    if rerank_model:
+        conf["rerank_model_name"] = rerank_model
+    # 默认只有 full 模式评估 answerability；模型对比时可用 threshold 省掉 LLM 调用
+    if answerability_mode:
+        retrieval["answerability_mode"] = answerability_mode
+    else:
+        retrieval["answerability_mode"] = "llm" if mode == "full" else "threshold"
     return conf
 
 
-def evaluate_mode(mode: str, golden: list[dict], documents: list, top_k: int) -> dict:
+def evaluate_mode(
+    mode: str,
+    golden: list[dict],
+    documents: list,
+    top_k: int,
+    vector_store: VectorStoreService | None = None,
+    rerank_model: str | None = None,
+    answerability_mode: str | None = None,
+) -> dict:
     service = RetrievalService(
-        vector_store=VectorStoreService(),
-        config=build_mode_config(mode, top_k),
+        vector_store=vector_store or VectorStoreService(),
+        config=build_mode_config(mode, top_k, rerank_model, answerability_mode),
     )
     per_query: list[dict] = []
     unresolved: list[dict] = []
@@ -83,7 +101,11 @@ def evaluate_mode(mode: str, golden: list[dict], documents: list, top_k: int) ->
     for entry in golden:
         answerable = bool(entry.get("answerable", True))
         snippets = entry.get("relevant_snippets") or []
-        relevant, missing = resolve_snippets(snippets, documents)
+        relevant, missing = resolve_snippets(
+            snippets,
+            documents,
+            min_chunk_chars=int(entry.get("min_chunk_chars", 0)),
+        )
         if missing:
             unresolved.append({"id": entry["id"], "missing": missing})
 
@@ -184,6 +206,14 @@ def main() -> None:
     parser.add_argument("--outdir", default=str(PROJECT_ROOT / "eval" / "results"))
     parser.add_argument("--save-baseline", action="store_true", help="把 full 模式结果写为 baseline.json")
     parser.add_argument("--limit", type=int, default=0, help="只跑前 N 条，调试用")
+    parser.add_argument("--collection", default=None, help="Chroma 集合名（默认读 config/chroma.yml）")
+    parser.add_argument("--index-manifest", default=None, help="索引清单路径")
+    parser.add_argument("--parent-store", default=None, help="父块存储路径")
+    parser.add_argument("--include-keywords", default=None, help="仅实验用：只索引文件名包含关键词的文件")
+    parser.add_argument("--data-path", default=None, help="知识文件目录（默认 data）")
+    parser.add_argument("--rerank-model", default=None, help="覆盖 rerank 模型名（模型对比用）")
+    parser.add_argument("--answerability-mode", default=None, help="llm / threshold（模型对比建议 threshold）")
+    parser.add_argument("--tag", default="", help="输出文件名后缀，便于区分模型")
     args = parser.parse_args()
 
     if args.golden:
@@ -200,7 +230,22 @@ def main() -> None:
     if not golden:
         raise SystemExit("没有可用的 Golden Set")
 
-    vector_store = VectorStoreService()
+    def _abs(path: str | None) -> str | None:
+        if not path:
+            return None
+        return path if os.path.isabs(path) else str(PROJECT_ROOT / path)
+
+    include_keywords = None
+    if args.include_keywords:
+        include_keywords = [item.strip() for item in args.include_keywords.split(",") if item.strip()]
+
+    vector_store = VectorStoreService(
+        collection_name=args.collection,
+        index_manifest=_abs(args.index_manifest),
+        parent_store=_abs(args.parent_store),
+        include_keywords=include_keywords,
+        data_path=_abs(args.data_path),
+    )
     documents = vector_store.get_all_documents()
     stats = vector_store.stats()
     logger.info("评测语料：%s，Golden Set：%s 条", stats, len(golden))
@@ -212,45 +257,62 @@ def main() -> None:
         "golden_count": len(golden),
         "top_k": args.top_k,
         "corpus": stats,
+        "collection": stats.get("collection"),
+        "rerank_model": args.rerank_model or rag_conf.get("rerank_model_name"),
+        "answerability_mode": args.answerability_mode or "(mode default)",
         "modes": {},
     }
 
     for mode in modes:
-        logger.info("开始评测模式：%s", mode)
-        report["modes"][mode] = evaluate_mode(mode, golden, documents, args.top_k)
+        logger.info("开始评测模式：%s（rerank=%s）", mode, report["rerank_model"])
+        report["modes"][mode] = evaluate_mode(
+            mode,
+            golden,
+            documents,
+            args.top_k,
+            vector_store=vector_store,
+            rerank_model=args.rerank_model,
+            answerability_mode=args.answerability_mode,
+        )
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    out_path = outdir / f"eval-{stamp}.json"
+    suffix = f"-{args.tag}" if args.tag else ""
+    out_path = outdir / f"eval-{stamp}{suffix}.json"
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
 
     if args.save_baseline and "full" in report["modes"]:
-        full_result = report["modes"]["full"]
-        if full_result.get("degraded_ratio", 1.0) >= 0.5:
-            logger.warning(
-                "full 模式降级比例 %.0f%%，不覆盖 baseline（请恢复 rerank 额度后重跑）",
-                full_result["degraded_ratio"] * 100,
-            )
+        if args.tag:
+            logger.warning("带 --tag 的模型对比运行不覆盖 baseline（tag=%s）", args.tag)
         else:
-            baseline_path = outdir / "baseline.json"
-            with open(baseline_path, "w", encoding="utf-8") as f:
-                json.dump(
-                    {
-                        "generated_at": report["generated_at"],
-                        "golden_files": report["golden_files"],
-                        "golden_count": report["golden_count"],
-                        "top_k": args.top_k,
-                        "corpus": stats,
-                        "mode": "full",
-                        "result": full_result,
-                    },
-                    f,
-                    ensure_ascii=False,
-                    indent=2,
+            full_result = report["modes"]["full"]
+            if full_result.get("degraded_ratio", 1.0) >= 0.5:
+                logger.warning(
+                    "full 模式降级比例 %.0f%%，不覆盖 baseline（请恢复 rerank 额度后重跑）",
+                    full_result["degraded_ratio"] * 100,
                 )
-            logger.info("baseline 已写入 %s", baseline_path)
+            else:
+                baseline_path = outdir / "baseline.json"
+                with open(baseline_path, "w", encoding="utf-8") as f:
+                    json.dump(
+                        {
+                            "generated_at": report["generated_at"],
+                            "golden_files": report["golden_files"],
+                            "golden_count": report["golden_count"],
+                            "top_k": args.top_k,
+                            "corpus": stats,
+                            "collection": report.get("collection"),
+                            "rerank_model": report.get("rerank_model"),
+                            "mode": "full",
+                            "result": full_result,
+                        },
+                        f,
+                        ensure_ascii=False,
+                        indent=2,
+                    )
+                logger.info("baseline 已写入 %s", baseline_path)
 
     # 控制台摘要
     print(f"\n{'mode':<8} {'R@K':>8} {'Hit@K':>8} {'MRR@K':>8} {'NDCG@K':>8} "
