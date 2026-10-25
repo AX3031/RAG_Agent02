@@ -35,6 +35,7 @@
 
 ### Changed
 
+- README 重写为面向普通读者与 GitHub 访客的项目介绍（项目定位、能力清单、RAG 科普、评测数据、快速开始、已知限制与安全提示）；原开发者版 README 归档到 `docs/README-开发版.md`，并修正其相对链接。
 - RAG 输出从「一段不可追溯的文本」改为结构化证据契约；`rag_summarize` 保留为受控摘要，新增 `retrieve_knowledge`。
 - `rag/vector_store.py`：入库改为父子分块 + 稳定 chunk_id + 清单登记；支持增量更新、`--rebuild`、`--delete-doc`、prune；不再使用 `md5.text` 作为权威去重依据。
 - Chroma 集合由 `agent` 改为 `agent_v2`，与旧脏集合隔离；切分参数由 200/20 改为子块 240/40、父块 900。
