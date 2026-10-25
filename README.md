@@ -133,7 +133,7 @@ flowchart LR
 ### 2. 安装依赖
 
 ```powershell
-git clone https://github.com/AX3031/RAG_Agent02/tree/dev01
+git clone https://github.com/AX3031/RAG_Agent02.git
 cd project2
 uv sync
 ```
