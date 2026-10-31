@@ -35,6 +35,10 @@
 
 ### Changed
 
+- `rag/chunking.py`：`compute_index_version` 把 `separators` 纳入版本计算，`CHUNKER_VERSION` 由 `structure-v1` 升为 `structure-v2`；两个集合已重建（`agent_v2` 239 子块 / 96 父块，`agent_dd` 1543 / 450），`index_version` 由 `idx-fca9ff4e07` 变为 `idx-cac98b011b`（TD-40）。此后修改分块参数/切分符会触发 `INDEX_STALE`，不再静默使用旧块。
+- `rag/retrieval_service.py`：`_answerability_fallback` 改为读 `answerability_fallback_threshold`（0.40），与 `AnswerabilityChecker` 的兜底口径统一（TD-41）。
+- `rag/retrieval_service.py` + `rag/sparse_index.py`：BM25 缓存 key 改为 `index_version:块数:内容指纹`，并限制缓存条目数（上限 4），避免长驻进程复用旧倒排表（TD-42）。
+- `tests/test_chunking.py`：在现有用例中补充“`separators` 变化 → `index_version` 变化”的断言（测试总数仍为 37）。
 - README 重写为面向普通读者与 GitHub 访客的项目介绍（项目定位、能力清单、RAG 科普、评测数据、快速开始、已知限制与安全提示）；原开发者版 README 归档到 `docs/README-开发版.md`，并修正其相对链接。
 - RAG 输出从「一段不可追溯的文本」改为结构化证据契约；`rag_summarize` 保留为受控摘要，新增 `retrieve_knowledge`。
 - `rag/vector_store.py`：入库改为父子分块 + 稳定 chunk_id + 清单登记；支持增量更新、`--rebuild`、`--delete-doc`、prune；不再使用 `md5.text` 作为权威去重依据。
@@ -65,6 +69,14 @@
 
 ### Fixed
 
+- 文档与代码一致性专项修正：`docs/rag-improvement/01` 的分桶表改为 `eval/results/baseline.json` 的真实值（原数值无法在任何快照中复现）、`full` 链路模型名更正为 `qwen3-rerank` 并加“gte 时代基线”现状提示、随机基线补口径说明；`02` 补全 239 子块的文件构成（142+95+1+1）；`05` 标注 `denied` 为契约预留、把“检索漏召回”更正为“误拒”；`07` 补充 `eval-*.json` 未入库、复现命令需本地快照的说明。
+- `docs/ARCHITECTURE.md`：`create_agent` 示例的 tools 列表补上 `retrieve_knowledge`（原为 8 个）；TD-17 测试数 `30 条` → `37 条`；§2.3 “生产级会话持久化未接入”“自动化测试/CI 无”更正为已接入可选后端 / 37 条单测无 CI；`chunk_id` 格式补 `:04d`；补充“`denied` 与部分 `error.code` 为预留”“`request_timeout_ms` 不中断调用”“`--include-keywords` 不影响评测”等说明；§9.2/§7.4 配置表补全 `answerability_model_name`、`max_context_chars`、`request_timeout_ms`、`enable_sparse/enable_rerank`、`answerability_circuit_*`；`VectorStoreService` 参数补 `exclude_keywords`；新增 TD-40~TD-44。
+- `monitor_tool` 成功日志早于执行（TD-12）：拆成“开始调用”与“调用成功”，成功日志移到 `handler` 之后。
+- `eval/run_eval.py` 模块 docstring：`full = Hybrid + gte-rerank` 更正为 `qwen3-rerank`，并说明 `full + llm` 会调用 `qwen-flash`。
+- `rag/retrieval_service.py`：`rerank_model` 的兜底默认值由 `gte-rerank-v2` 改为 `qwen3-rerank`，与 `config/rag.yml` 对齐。
+- `rag/sparse_index.py`：`allowed_ids` 注释由“召回前过滤”更正为“打分过程中过滤”（效果等价，但不减少倒排遍历）。
+- `rag/telemetry.py`：`TTLCache` 支持 `max_size=0` 真正禁用缓存（`get` 恒 miss、`set` 直接返回），使评测的 `cache_size: 0` 名副其实（TD-43）。
+- `eval/compare_reports.py`：从报告顶层读 `top_k`，不再硬编码 `k=10`（TD-44）。
 - TD-07「知识库只增不删」：内容变化先写新版本再删旧块；实测 239→238→239（删除后重建）。
 - 证据不足时主 Agent 使用自有知识硬编：增加代码级拒答护栏（不依赖提示词遵守）。
 - 生成答案引用越界：`validate_evidence_ids` 校验 `【ev_003】` / `【参考资料3】` 必须来自本次检索。

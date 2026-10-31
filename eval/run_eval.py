@@ -9,8 +9,10 @@
 - 三种模式共用同一份索引与同一批 Golden Set，只切换检索链路：
     dense  = 纯向量（旧实现基线）
     hybrid = Dense + BM25 + RRF
-    full   = Hybrid + gte-rerank（新实现）
-- 不调用生成模型；除 rerank/embedding 外不依赖网络，结果确定可复现；
+    full   = Hybrid + rerank（默认 qwen3-rerank）+ Answerability
+- 指标计算本身不调用生成模型；但 full + answerability_mode=llm 时会调用 qwen-flash
+  判定可回答性。做模型对比时应显式传 --answerability-mode threshold，把变量隔离在“排序”上；
+  除 embedding/rerank（以及上面的可回答性判定）外不依赖网络，同一索引快照下结果可复现；
 - 输出 JSON 快照到 `eval/results/`，便于用 diff 对比每次改动。
 """
 

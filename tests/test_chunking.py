@@ -42,6 +42,11 @@ class ChunkingTest(unittest.TestCase):
             compute_index_version("m1", 200, 20, 800),
             compute_index_version("m2", 200, 20, 800),
         )
+        # separators 也进入 index_version：改切分符必须重建索引
+        self.assertNotEqual(
+            compute_index_version("m1", 200, 20, 800, ["\n"]),
+            compute_index_version("m1", 200, 20, 800, ["。"]),
+        )
 
     def test_children_have_required_metadata(self):
         bundle = self._split()

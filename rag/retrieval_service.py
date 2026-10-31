@@ -11,6 +11,7 @@ RAG 子 Agent 的检索平面：Dense + BM25 → RRF → Rerank → 父子扩展
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -37,7 +38,7 @@ class RetrievalService:
         self.vector_store = vector_store or VectorStoreService()
         full_conf = config or rag_conf
         self.cfg = full_conf["retrieval"]
-        self.rerank_model = full_conf.get("rerank_model_name", "gte-rerank-v2")
+        self.rerank_model = full_conf.get("rerank_model_name", "qwen3-rerank")
         self.cache = TTLCache(
             max_size=int(self.cfg.get("cache_size", 128)),
             ttl_seconds=int(self.cfg.get("cache_ttl_seconds", 300)),
@@ -130,9 +131,7 @@ class RetrievalService:
             if self.cfg.get("enable_sparse", True):
                 try:
                     documents = self.vector_store.get_all_documents()
-                    bm25 = get_bm25_index(
-                        f"{self.vector_store.index_version}:{len(documents)}", documents
-                    )
+                    bm25 = get_bm25_index(self._bm25_cache_key(documents), documents)
                     allowed = self._allowed_ids(documents, scope) if scope else None
                     sparse_candidates = bm25.search(
                         query, k=int(self.cfg.get("sparse_k", 15)), allowed_ids=allowed
@@ -437,15 +436,27 @@ class RetrievalService:
             )
         return evidence
 
-    @staticmethod
-    def _answerability_fallback(evidence: list) -> bool:
-        """LLM 熔断/失败时的保守兜底：没有 rerank 分数或分数不足都按不可回答处理。"""
+    def _answerability_fallback(self, evidence: list) -> bool:
+        """LLM 熔断期间的保守兜底：与 AnswerabilityChecker 使用同一个配置阈值。"""
         if not evidence:
             return False
         top = evidence[0].score.get("rerank")
         if top is None:
             return False
-        return float(top) >= 0.35
+        threshold = float(self.cfg.get("answerability_fallback_threshold", 0.40))
+        return float(top) >= threshold
+
+    def _bm25_cache_key(self, documents: list) -> str:
+        """BM25 缓存 key：索引版本 + 块数 + 内容指纹。
+
+        只靠“块数”无法发现“内容变了但总块数不变”的情况，长驻进程会复用旧倒排表。
+        """
+        digest = hashlib.sha1()
+        for document in documents:
+            metadata = document.metadata or {}
+            digest.update(str(metadata.get("chunk_id") or "").encode("utf-8"))
+            digest.update(str(metadata.get("content_hash") or "").encode("utf-8"))
+        return f"{self.vector_store.index_version}:{len(documents)}:{digest.hexdigest()[:12]}"
 
     @staticmethod
     def _allowed_ids(documents: list, scope: dict) -> set[str]:

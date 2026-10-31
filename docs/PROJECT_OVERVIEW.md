@@ -21,7 +21,7 @@
 | langchain-openai | 1.6.6 | `init_chat_model` 构造的 `ChatOpenAI` 调用 DashScope 兼容端点 |
 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader |
 | langchain-chroma / chromadb | 1.1.0 / 1.5.9 | 本地向量库 |
-| dashscope | 1.27.5 | 通义千问 / Embedding / gte-rerank SDK |
+| dashscope | 1.27.5 | 通义千问 / Embedding / Rerank SDK |
 | streamlit | 1.64.0 | 对话 UI 与流式渲染 |
 
 模型：`qwen3.5-flash`（对话）、`text-embedding-v4`（向量化）、`qwen-flash`（Answerability 判定）、`qwen3-rerank`（当前默认精排；`gte-rerank-v2` 历史对比、`qwen3-vl-rerank` 排序优先备选）。

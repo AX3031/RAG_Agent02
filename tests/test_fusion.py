@@ -67,6 +67,11 @@ class CacheTest(unittest.TestCase):
         self.assertEqual(cache.get("b"), 2)
         self.assertEqual(cache.get("c"), 3)
 
+        # max_size=0 表示禁用缓存（评测用 cache_size: 0 隔离缓存）
+        disabled = TTLCache(max_size=0, ttl_seconds=60)
+        disabled.set("a", 1)
+        self.assertIsNone(disabled.get("a"))
+
     def test_ttl_expiry(self):
         cache = TTLCache(max_size=2, ttl_seconds=0.05)
         cache.set("a", 1)

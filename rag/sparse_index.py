@@ -35,7 +35,11 @@ def tokenize(text: str) -> list[str]:
 
 
 class BM25Index:
-    """Okapi BM25，支持按 allowed_ids 做召回前过滤（ACL 语义）。"""
+    """Okapi BM25，支持按 allowed_ids 过滤（ACL 语义）。
+
+    注意：过滤发生在打分子循环内部，效果等价于“召回前过滤”（不会出现在结果里），
+    但不会减少倒排表的遍历量。
+    """
 
     def __init__(self, documents: list[Document], k1: float = 1.5, b: float = 0.75):
         self.documents = documents
@@ -92,7 +96,7 @@ _bm25_lock = threading.Lock()
 
 
 def get_bm25_index(cache_key: str, documents: list[Document]) -> BM25Index:
-    """按 cache_key（索引版本 + 块数）缓存 BM25，避免每次查询重建。"""
+    """按 cache_key（索引版本 + 块数 + 内容指纹）缓存 BM25，避免每次查询重建。"""
     with _bm25_lock:
         cached = _bm25_cache.get(cache_key)
         if cached is not None:
@@ -100,6 +104,9 @@ def get_bm25_index(cache_key: str, documents: list[Document]) -> BM25Index:
     index = BM25Index(documents)
     with _bm25_lock:
         _bm25_cache[cache_key] = index
+        # 内容指纹会随重建变化，限制条目数，避免长期运行后内存无限增长
+        while len(_bm25_cache) > 4:
+            _bm25_cache.pop(next(iter(_bm25_cache)))
     return index
 
 

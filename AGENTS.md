@@ -50,7 +50,7 @@
 - 新增/删除中间件 → `ARCHITECTURE.md` 5.2/8/11、`architecture.svg` 编排层。
 - 改 RAG → `ARCHITECTURE.md` 7、`rag-pipeline.svg`、`docs/rag-improvement/` 对应阶段文档。
 - 改 rerank 模型/阈值 → `ARCHITECTURE.md` 3/7.2/9.2/12、`README.md` 技术栈/已知限制、`PROJECT_OVERVIEW.md` 2/5、`rag-pipeline.svg`；重跑评测，更新 `07` 或新增报告。
-- 改评测/Golden Set → `docs/rag-improvement/01`、`07`、`README.md` 4.7；更新 `eval/results/baseline.json` 前确认没有大面积降级。
+- 改评测/Golden Set → `docs/rag-improvement/01`、`07`、`README.md` 第 3 节（效果表）与 4.6（跑测试与评测）；更新 `eval/results/baseline.json` 前确认没有大面积降级。
 - 改配置 → `ARCHITECTURE.md` 9、`README.md` 配置速查。
 - 改模型/依赖/目录 → 对应技术栈、拓扑与目录树章节；**图也要同步**：`architecture.svg` 的模型/存储层节点与副标题（改动落在 RAG 链上的模型时，再同步 `rag-pipeline.svg` 的 ChatModel 节点）。
 - 任何值得记录的改动（新增/变更/废弃/移除/修复）→ 归入 `CHANGELOG.md` 的 `## [Unreleased]`，按 Keep a Changelog 分组（Added / Changed / Deprecated / Removed / Fixed / Security）写英文标题 + 中文描述；发布时才改成版本标题。不要把增量日志写进架构正文。

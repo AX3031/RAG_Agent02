@@ -17,7 +17,7 @@ def monitor_tool(
         # 执行的函数本身
         handler: Callable[[ToolCallRequest], ToolMessage | Command],
 )-> ToolMessage | Command:          # 工具执行的监控
-    logger.info(f"[tool monitor]工具{request.tool_call['name']}调用成功")
+    logger.info(f"[tool monitor]工具{request.tool_call['name']}开始调用")
     logger.info(f"[tool monitor]工具{request.tool_call['name']}传入参数:{request.tool_call['args']}")
 
     try:

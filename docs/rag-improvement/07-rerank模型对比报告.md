@@ -312,6 +312,8 @@ rerank_model_name: gte-rerank-v2
 
 ## 10. 复现命令
 
+> 说明：`.gitignore` 忽略了 `eval/results/eval-*.json`（只保留 `baseline.json`）。下面的 `--candidate eval/results/eval-...json` 路径需要本地先跑出同名快照，或改成自己实际的文件名；否则 `compare_reports` 会因找不到文件而失败。
+
 ```powershell
 # A. 论语 + 需求文档（agent_v2）
 .venv\Scripts\python.exe -m eval.run_eval --modes hybrid --top-k 10 `

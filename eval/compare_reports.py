@@ -41,6 +41,8 @@ def load_report(name: str, path: str) -> dict:
         report = json.load(f)
     mode = _first_mode(report)
     result = report["modes"][mode]
+    # 从报告顶层读 top_k，避免与不同 --top-k 的快照混比
+    top_k = int(report.get("top_k") or 10)
     rows = {}
     for item in result.get("queries", []):
         relevant = set(item.get("relevant") or [])
@@ -52,8 +54,8 @@ def load_report(name: str, path: str) -> dict:
             "answerable": bool(item.get("answerable", True)),
             "relevant_count": len(relevant),
             "retrieved": retrieved,
-            "rr": _rr(retrieved, relevant),
-            "hit": 1.0 if set(retrieved[:10]) & relevant else 0.0,
+            "rr": _rr(retrieved, relevant, top_k),
+            "hit": 1.0 if set(retrieved[:top_k]) & relevant else 0.0,
             "top1_relevant": bool(retrieved and retrieved[0] in relevant),
             "top_rerank": item.get("top_rerank"),
             "latency_ms": item.get("latency_ms", 0),
@@ -63,6 +65,7 @@ def load_report(name: str, path: str) -> dict:
         "name": name,
         "path": path,
         "mode": mode,
+        "top_k": top_k,
         "collection": report.get("collection"),
         "rerank_model": report.get("rerank_model"),
         "metrics": {

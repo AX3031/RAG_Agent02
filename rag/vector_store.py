@@ -42,6 +42,7 @@ class VectorStoreService:
             chunk_size=chroma_conf["chunk_size"],
             chunk_overlap=chroma_conf["chunk_overlap"],
             parent_size=chroma_conf["parent_chunk_size"],
+            separators=chroma_conf["separators"],
         )
         self.collection_name = collection_name or chroma_conf["collection_name"]
         self.data_path = data_path or chroma_conf["data_path"]

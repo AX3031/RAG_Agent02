@@ -23,7 +23,7 @@ from pathlib import Path
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-CHUNKER_VERSION = "structure-v1"
+CHUNKER_VERSION = "structure-v2"
 
 _MD_HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*$")
 _JUAN_HEADING = re.compile(r"^卷[一二三四五六七八九十百]+[\s\u3000]+[\u4e00-\u9fff]{1,12}$")
@@ -49,9 +49,11 @@ def compute_index_version(
     chunk_size: int,
     chunk_overlap: int,
     parent_size: int,
+    separators: list[str] | None = None,
 ) -> str:
-    """索引版本 = 分块算法 + 分块参数 + Embedding 模型；任一项变化都必须重建索引。"""
-    raw = f"{CHUNKER_VERSION}|{embedding_model}|{chunk_size}|{chunk_overlap}|{parent_size}"
+    """索引版本 = 分块算法 + 分块参数（含 separators）+ Embedding 模型；任一项变化都必须重建索引。"""
+    seps = json.dumps(separators or [], ensure_ascii=False)
+    raw = f"{CHUNKER_VERSION}|{embedding_model}|{chunk_size}|{chunk_overlap}|{parent_size}|{seps}"
     return "idx-" + hashlib.sha1(raw.encode("utf-8")).hexdigest()[:10]
 
 

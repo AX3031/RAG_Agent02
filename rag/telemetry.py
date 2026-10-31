@@ -75,7 +75,8 @@ class TTLCache:
     """极简 TTL + LRU 缓存；单进程可用，多实例部署时应换 Redis（v2 §7）。"""
 
     def __init__(self, max_size: int = 128, ttl_seconds: int = 300):
-        self.max_size = max(1, max_size)
+        # max_size=0 表示禁用缓存；此前用 max(1, ...) 会让“0”变成容量 1
+        self.max_size = max(0, int(max_size))
         self.ttl_seconds = max(0.001, ttl_seconds)
         self._store: OrderedDict[str, tuple[float, Any]] = OrderedDict()
 
@@ -83,6 +84,8 @@ class TTLCache:
         return time.monotonic()
 
     def get(self, key: str) -> Any | None:
+        if self.max_size <= 0:
+            return None
         entry = self._store.get(key)
         if entry is None:
             return None
@@ -94,6 +97,8 @@ class TTLCache:
         return value
 
     def set(self, key: str, value: Any) -> None:
+        if self.max_size <= 0:
+            return
         self._store[key] = (self._now() + self.ttl_seconds, value)
         self._store.move_to_end(key)
         while len(self._store) > self.max_size:

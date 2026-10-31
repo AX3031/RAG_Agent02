@@ -2,7 +2,7 @@
 
 > 面向对象：需要接手、扩展或排查该项目的开发/运维人员。
 >
-> 代码基线：`05308a7`（2026-10-22 工作区快照）。
+> 代码基线：`dev01` 分支工作区快照（2026-10-24；上一版基于 `05308a7`，2026-10-22）。
 >
 > 配套图：[architecture.svg](architecture.svg)（分层架构）、[rag-pipeline.svg](rag-pipeline.svg)（RAG 数据流）。
 >
@@ -102,12 +102,12 @@
 | 能力 | 现状 |
 | --- | --- |
 | 用户登录、鉴权、租户隔离 | 未实现 |
-| 生产级会话持久化 | 未接入 Agent 主链路 |
+| 生产级会话持久化 | 可选后端已接入（本地 JSON / PostgreSQL）；文件模式单进程单文件，不支持多实例共享 |
 | 限流、计费、审计 | 未实现 |
 | 高可用/水平扩展 | 单进程、本地 Chroma，不支持多 worker 共享状态 |
 | 真实天气/定位/用户系统 | 工具返回模拟数据 |
 | 文件上传入库 UI | `app_file_uploader.py` 为空壳 |
-| 自动化测试/CI | 无 |
+| 自动化测试 / CI | 37 条 stdlib `unittest`；无 CI |
 
 > 结论：当前适合做原型验证和 LangChain Agent 二次开发脚手架，不应直接按生产系统对外承诺 SLA。
 
@@ -130,7 +130,7 @@
 | 社区集成 | langchain-community | 0.4.2 | `DashScopeEmbeddings`、PDF/TXT Loader | `model/factory.py`、`utils/file_handler.py` |
 | 向量库 | langchain-chroma / chromadb | 1.1.0 / 1.5.9 | 本地持久化向量检索 | `rag/vector_store.py` |
 | 文本切分 | langchain-text-splitters | 1.1.2 | `RecursiveCharacterTextSplitter`（子块切分） | `rag/chunking.py` |
-| 模型 SDK | dashscope | 1.27.5 | 通义千问 / Embedding / gte-rerank | `DashScopeEmbeddings`、`rag/retrieval_service.py`、`rag/answerability.py` |
+| 模型 SDK | dashscope | 1.27.5 | 通义千问 / Embedding / Rerank | `DashScopeEmbeddings`、`rag/retrieval_service.py`、`rag/answerability.py` |
 | 稀疏检索 | 自研 BM25 | — | 中文 unigram + bigram，无新增依赖 | `rag/sparse_index.py` |
 | 离线评测 | 标准库 stdlib | — | Recall/HitRate/MRR/NDCG、随机基线 | `eval/retrieval_metrics.py`、`eval/run_eval.py` |
 | OpenAI SDK | openai | 3.19.2 | `ChatOpenAI` 的 HTTP 客户端（传递依赖） | `langchain-openai` |
@@ -189,7 +189,7 @@ flowchart LR
 4. **动态提示词用 `runtime.context` 标记**：`fill_context_for_report` 工具触发后，`monitor_tool` 把 `context["report"]` 置为 `True`，下一次模型调用由 `report_prompt_switch` 切换提示词。
 5. **配置与提示词外置**：模型名、切分参数、路径、提示词都不写死在代码里，便于替换与灰度。
 6. **绝对路径统一入口**：`utils/path_tool.get_abs_path()` 基于文件位置推导项目根，避免依赖当前工作目录。
-7. **Chroma 本地持久化 + MD5 去重**：适合单机原型；重复执行入库不会重复 embedding 同一文件。
+7. **Chroma 本地持久化 + 版本去重**：文件 MD5 作为 `version`、由 `IndexManifest` 记录，适合单机原型；重复执行入库不会对同一文件重复 embedding。
 8. **OpenAI 兼容协议做模型适配层**：`ChatOpenAI` + `BASE_URL_DASHSCOPE` 可以较低成本切换供应商。
 
 ### 4.3 主链路与非主链路
@@ -277,7 +277,7 @@ project2/
 | `rag/answerability.py` | `AnswerabilityChecker` | qwen-flash YES/NO 判定；快速路径；阈值兜底 | 被 `RetrievalService` 使用 |
 | `rag/telemetry.py` | `Trace`、`TTLCache`、`make_cache_key` | trace_id、分段延迟、脱敏日志、TTL/LRU 缓存 | 被 `RetrievalService` 使用 |
 | `rag/rag_service.py` | `RagSummarizeService`、`retrieve`、`rag_summarize` | 调用检索服务、拼装证据、受控生成、引用校验 | 上游：`rag_summarize` 工具；下游：`RetrievalService`、ChatModel |
-| `rag/vector_store.py` | `VectorStoreService`（可传 `collection_name/index_manifest/parent_store/include_keywords/data_path`）、`load_document`、`delete_document`、`rebuild`、`similarity_search_with_score`、`_is_included` | Chroma 初始化、父子分块入库、版本传播、删除/重建、Dense 检索、分库实验 | 上游：手动入库/检索服务；下游：Chroma、Embedding、清单/父块 |
+| `rag/vector_store.py` | `VectorStoreService`（可传 `collection_name/index_manifest/parent_store/include_keywords/exclude_keywords/data_path`）、`load_document`、`delete_document`、`rebuild`、`similarity_search_with_score`、`_is_included` | Chroma 初始化、父子分块入库、版本传播、删除/重建、Dense 检索、分库实验 | 上游：手动入库/检索服务；下游：Chroma、Embedding、清单/父块 |
 | `eval/run_eval.py` | `evaluate_mode`、`build_mode_config`、`main` | 三模式离线评测与 JSON 快照；支持 collection/rerank model/answerability mode/tag | 上游：CLI；下游：`RetrievalService`、Golden Set |
 | `eval/retrieval_metrics.py` | `recall_at_k`、`mrr_at_k`、`ndcg_at_k`、`resolve_snippets` | 检索指标与片段→块映射（支持 `min_chunk_chars`） | 被 `run_eval` 使用 |
 | `eval/calibrate_threshold.py` | `main` | 用 Golden Set 校准可回答性阈值 | 上游：CLI；下游：评测报告 |
@@ -413,9 +413,9 @@ create_agent(
     model=chat_model,
     system_prompt=load_system_prompts(),
     tools=[
-        rag_summarize, get_weather, get_user_location, get_user_id,
-        get_current_month, fetch_external_data, fill_context_for_report,
-        web_search_baidu,
+        retrieve_knowledge, rag_summarize, get_weather, get_user_location,
+        get_user_id, get_current_month, fetch_external_data,
+        fill_context_for_report, web_search_baidu,
     ],
     middleware=[
         model_fallback_middleware, pii_middleware_email, pii_middleware_phone,
@@ -537,7 +537,7 @@ AIMessage("深圳今天晴天，26℃...")
 | 3. 版本比对 | `IndexManifest.get_file(rel_path)` | 同版本跳过；变化则进入更新流程 |
 | 4. 加载 | `txt_loader` / `pdf_loader` | `TextLoader(utf-8)` / `PyPDFLoader` |
 | 5. 结构化分块 | `split_documents(...)` | 子块 240 字 / overlap 40；父块 900 字；识别 Markdown/卷名/章节标题与《论语》对话行 |
-| 6. 稳定 ID | `chunk_id = {doc_id}#{version[:8]}#c{seq}` | 同文件同参数 ID 不变，Golden Set 可复用 |
+| 6. 稳定 ID | `chunk_id = {doc_id}#{version[:8]}#c{seq:04d}` | 同文件同参数 ID 不变，Golden Set 可复用 |
 | 7. 写父块 | `ParentStore.upsert_document(doc_id, parents)` | 按文档整体覆盖，避免版本切换后父子悬空 |
 | 8. 写子块 | `Chroma.add_documents(child_docs, ids=chunk_ids)` | Embedding 由 `DashScopeEmbeddings` 完成；collection `agent_v2` |
 | 9. 删旧版本 | `vector_store.delete(ids=旧 chunk_ids)` | **新版本写入成功后再删**，避免中途失败丢数据 |
@@ -548,7 +548,7 @@ AIMessage("深圳今天晴天，26℃...")
 
 - `data/`：`论语.pdf`（142 子块）、`rag_requirements.txt`（95 子块，本地）、`测试文本.txt`、`测试pdf2.pdf`；另有 `《道德经》带讲解.pdf` 与 `道德经讲义(黄元吉).pdf`，单独建 `agent_dd` 集合（1543 子块 / 450 父块）。
 - `chroma_db/`：collection `agent_v2`（239 子块）与 `agent_dd`（1543 子块）；`storage/`：对应父块与索引清单。
-- `index_version = idx-fca9ff4e07`（由分块算法 + 参数 + Embedding 模型派生）。
+- `index_version = idx-cac98b011b`（由分块算法 `structure-v2` + 参数 `240/40/900` + `separators` + Embedding 模型派生）。
 
 ### 7.2 在线检索（Dense + BM25 + RRF + Rerank）
 
@@ -572,6 +572,8 @@ AIMessage("深圳今天晴天，26℃...")
 
 `rag/contract.py` 定义 v2 §1 的响应结构，状态为 `ok / no_evidence / degraded / denied / error`；`error.code` 为 `TIMEOUT / INDEX_STALE / UPSTREAM_5XX / RATE_LIMIT / INVALID_QUERY / DENIED / NO_EVIDENCE`。
 
+> 落地情况（以代码为准）：当前 `RetrievalService` 只会产出 `ok / no_evidence / degraded / error`，以及 `INVALID_QUERY / INDEX_STALE / UPSTREAM_5XX` 三个错误码。`denied` 与 `TIMEOUT / RATE_LIMIT / DENIED / NO_EVIDENCE` 是**契约预留**，尚无产出点；`request_timeout_ms` 也只在事后标记 `budget_exceeded`，不会中断调用。
+
 硬性约束：
 
 - 所有响应携带 `contract_version / request_id / trace_id / index_version`；
@@ -583,7 +585,9 @@ AIMessage("深圳今天晴天，26℃...")
 
 离线评测：`uv run -m eval.run_eval --top-k 10`，Golden Set 为 `eval/golden_set.jsonl`（论语 50）+ `eval/golden_set.local.jsonl`（需求文档 21，本地）+ `eval/golden_set_daodejing.jsonl`（道德经 32）。指标：Recall@K / HitRate@K / MRR@K / NDCG@K + 随机基线 + 分桶。
 
-模型对比：`uv run -m eval.run_eval --modes full --rerank-model qwen3-rerank --tag rerank-qwen3`；`uv run -m eval.compare_reports` 可对比两份报告的逐 query 胜负。分库实验用 `--collection agent_dd --index-manifest storage/index_manifest_dd.json --parent-store storage/parents_dd.json --include-keywords 道德经`。
+模型对比：`uv run -m eval.run_eval --modes full --rerank-model qwen3-rerank --tag rerank-qwen3`；`uv run -m eval.compare_reports` 可对比两份报告的逐 query 胜负。分库实验用 `--collection agent_dd --index-manifest storage/index_manifest_dd.json --parent-store storage/parents_dd.json`。
+
+> 注意：`--include-keywords` / `--data-path` 只影响 `VectorStoreService.load_document()`（入库），评测阶段只读集合、不写入，传了也不改变评测结果。要切换评测语料请用 `--collection` + `--golden`。
 
 | 参数 | 当前值 | 影响 |
 | --- | --- | --- |
@@ -595,7 +599,9 @@ AIMessage("深圳今天晴天，26℃...")
 | `rerank_top_n` / `final_top_n` | 5 / 5 | 精排保留数与最终证据数 |
 | `answerability_mode` | `llm` | `llm`=LLM 判定 + 阈值兜底；`threshold`=仅阈值 |
 | `answerability_timeout_ms` | 5000 | 判定超时；失败退回阈值 |
+| `max_context_chars` | 4000 | 证据 `context` 总预算；超出截断/丢证据 |
 | `rerank_timeout_ms` | 3000 | 精排超时；失败退回 RRF |
+| `request_timeout_ms` | 5000 | 单次检索预算（仅事后标记，不中断） |
 | `rerank_circuit_threshold` / `cooldown` | 3 / 120s | 连续失败后熔断 |
 | `cache_size` / `ttl` | 128 / 300s | 进程内 TTL+LRU |
 | `collection_name` | `agent_v2` | 换集合名等价于换知识库 |
@@ -710,13 +716,18 @@ import agent.tools.middleware
 | `retrieval.rrf_k` | `60` | RRF 常数 | 越小越偏向头部结果 |
 | `retrieval.rerank_top_n` / `final_top_n` | `5` / `5` | 精排保留数 / 最终证据数 | 影响上下文长度与成本 |
 | `retrieval.answerability_mode` | `llm` | 可回答性模式 | `llm` 更准但多一次模型调用；`threshold` 仅看分数 |
+| `retrieval.answerability_model_name` | `qwen-flash` | 可回答性判定模型 | 换模型需重新校准阈值 |
 | `retrieval.answerability_threshold` | `0.40` | `threshold` 模式阈值 | 按 qwen3-rerank 校准；换模型必须重算 |
 | `retrieval.answerability_timeout_ms` | `5000` | LLM 判定超时 | 超时退回阈值并记 `degraded` |
 | `retrieval.answerability_fallback_threshold` | `0.40` | 阈值兜底 | 越大越保守（误拒多、漏拒少） |
 | `retrieval.answerability_high_threshold` | `0.85` | 高分快速可回答 | 高于此值跳过 LLM，省一次调用 |
 | `retrieval.answerability_low_threshold` | `0.40` | 低分快速不可回答 | 低于此值直接拒答 |
+| `retrieval.answerability_circuit_threshold` / `cooldown` | `3` / `120s` | 可回答性熔断 | 连续失败后短时间直接用阈值兜底 |
+| `retrieval.max_context_chars` | `4000` | 证据 `context` 总预算 | 影响 token 成本；超出会截断甚至丢证据 |
 | `retrieval.rerank_timeout_ms` | `3000` | 精排超时 | 超时退回 RRF |
 | `retrieval.rerank_circuit_threshold` / `cooldown` | `3` / `120s` | 精排熔断 | 连续失败后短时间跳过 |
+| `retrieval.request_timeout_ms` | `5000` | 单次检索预算 | **只用做事后标记 `budget_exceeded`，不会中断调用** |
+| `retrieval.enable_sparse` / `enable_rerank` | `true` / `true` | 链路开关 | 评测的 `dense` / `hybrid` 模式靠它们构造 |
 | `retrieval.cache_size` / `ttl` | `128` / `300s` | 进程内缓存 | 多实例需换 Redis |
 
 ### 9.3 `config/chroma.yml`
@@ -731,7 +742,7 @@ import agent.tools.middleware
 | `chunk_size` | `240` | 子块长度（字符） |
 | `chunk_overlap` | `40` | 子块重叠 |
 | `parent_chunk_size` | `900` | 父块长度（字符） |
-| `separators` | 中英文标点列表 | 递归切分优先级 |
+| `separators` | 中英文标点列表 | 递归切分优先级；**已纳入 `index_version`**，改动后需重建 |
 | `index_manifest` | `storage/index_manifest.json` | 文件→版本→块清单 |
 | `parent_store` | `storage/parents.json` | 父块存储 |
 | `scope_tags` | `["public"]` | 入库时写入的默认 ACL 标签 |
@@ -810,7 +821,7 @@ get_abs_path("chroma_db")  # -> <project_root>/chroma_db
 | `eval/results/baseline.json` | 检索基线快照 | `eval.run_eval` | 人/CI | **建议** |
 | `eval/results/eval-*.json` | 单次评测快照 | `eval.run_eval` | 人 | 不建议（体积大） |
 | `logs/` | 运行日志 | `logger_handler` | 人/运维 | 不建议 |
-| `memorys/chat_history/` | 文件型会话历史 | `FileChatMessageHistory` | 同左 | 不建议（含用户内容） |
+| `memorys/chat_history/` | 文件型会话历史 | `FileCheckpointSaver`（file 模式） | 同左 | 不建议（含用户内容） |
 | `config/`、`prompts/` | 配置与提示词 | 人工 | 全项目 | 建议 |
 | `env_patch/` | 环境补丁源文件 | 人工 | 虚拟环境安装 | 建议 |
 
@@ -837,7 +848,9 @@ get_abs_path("chroma_db")  # -> <project_root>/chroma_db
 
 | 文件 | 存储 | 特点 | 现状 |
 | --- | --- | --- | --- |
-| `memorys/postgres_checkpointer.py` | PostgreSQL | `PostgresSaver` + `ConnectionPool`；幂等建表；`USE_POSTGRES_CHECKPOINTER=true` 时由 `ReactAgent` 加载 | ✅ 可选接入 |
+| `memorys/memory_factory.py` | — | `create_checkpointer(memory_mode)` 统一入口；`MEMORY_MODE_LABELS` 界面文案 ↔ 模式值；PostgreSQL 分支延迟导入 | ✅ 主链路 |
+| `memorys/file_checkpointer.py` | `memorys/chat_history/agent_checkpoints.json` | `FileCheckpointSaver` 继承 `InMemorySaver`，把 storage/writes/blobs 原子写入 JSON；进程内单例 + 可重入锁 | ✅ 可选接入（file 模式） |
+| `memorys/postgres_checkpointer.py` | PostgreSQL | `PostgresSaver` + `ConnectionPool`；幂等建表；未显式传 `memory_mode` 且 `USE_POSTGRES_CHECKPOINTER=true` 时作为默认 | ✅ 可选接入 |
 | `memorys/temporary_memory.py` | 进程内 `dict` | 重启即失；适合单进程演示 | 🧪 独立示例 |
 | `memorys/persistent_memory.py` | `memorys/chat_history/<session_id>` JSON | 自己实现 `BaseChatMessageHistory`；用 `RunnableWithMessageHistory` 自动附加历史 | 🧪 独立示例 |
 
@@ -889,17 +902,17 @@ uv run -m rag.vector_store --rebuild
 
 `PIIMiddleware` / `ModelFallbackMiddleware` 不写业务日志：前者按策略脱敏，后者负责模型降级；其命中/降级情况建议在 11.5 中补充指标。
 
-### 11.2 已知日志问题
+### 11.2 日志顺序（已修复）
 
-`monitor_tool` 在调用 `handler(request)` **之前**就打印了“工具调用成功”，成功后再次打印。因此日志里会出现：
+`monitor_tool` 早期版本在调用 `handler(request)` **之前**就打印“工具调用成功”，成功后再次打印，排障时容易误判（TD-12）。现在拆成“开始调用 / 传入参数 / 调用成功”三条：
 
 ```text
-[tool monitor]工具 get_weather 调用成功
+[tool monitor]工具 get_weather 开始调用
 [tool monitor]工具 get_weather 传入参数:{'city': '深圳'}
 [tool monitor]工具 get_weather 调用成功
 ```
 
-排查时应以“参数 + 第二次成功/失败”为准，或直接修复日志顺序（见 12 节）。
+失败时只会有“开始调用 + 传入参数”，随后由 `logger.error` 记录失败原因并重新抛出；排查以 error 行为准。
 
 ### 11.3 错误处理策略
 
@@ -951,12 +964,12 @@ uv run -m rag.vector_store --rebuild
 | TD-09 | P2 | 导入期副作用重 | `agent_tools.py` 模块级 `rag = ...`；`factory.py` 模块级实例 | 启动慢、测试难、配置错误提前暴露 | 惰性初始化/依赖注入/`lru_cache` 工厂 |
 | TD-10 | ✅ 已修复 | `model/factory.py` 重复 import 与遗留代码 | 已删除 `langchain_community` 的 `ChatOpenAI`/`ChatTongyi` 遗留 import，`BaseChatModel` 改从 `langchain_core.language_models.chat_models` 导入，对话模型统一走 `init_chat_model` | 可读性差，易误用 | 后续若接入非 OpenAI 协议供应商，再扩展 `model_provider` |
 | TD-11 | P2 | `OPEN_API_KEY` 命名易错 | `os.getenv("OPEN_API_KEY")` | 新成员常写成 `OPENAI_API_KEY` 导致认证失败 | 改名 `OPENAI_API_KEY`，或同时兼容两者 |
-| TD-12 | P2 | `monitor_tool` 成功日志早于执行 | 先打印成功，再 `handler(request)` | 排障误判 | 把“成功”日志移到 `handler` 之后 |
+| TD-12 | ✅ 已修复 | `monitor_tool` 成功日志早于执行 | 已拆成「开始调用」与「调用成功」两条日志，成功日志移到 `handler` 之后 | 排障不再误判 | 可进一步加耗时字段 |
 | TD-13 | P2 | `pyproject.toml` 依赖可疑/缺失 | 仍声明 `callable`、`command`、`datetime`、`logger`；直接 import 的 `langchain-text-splitters` 未显式声明（`langgraph` 现由 `langchain`/`langgraph-checkpoint-postgres` 传递提供） | 环境可复现性差；误装包 | 清理无用依赖；把直接使用包写入 `dependencies` |
 | TD-14 | P2 | `yaml.FullLoader` 非最安全 | `config_handler.py` | 恶意 YAML 有风险（本地配置场景较低） | 改用 `yaml.safe_load` |
 | TD-15 | P2 | `md5.text` 非原子、无并发保护 | `open(..., "a")` | 并发入库重复/丢记录 | 加文件锁/临时文件原子替换 |
 | TD-16 | ✅ 已修复 | 运行产物被 Git 跟踪 | `.gitignore` 已补充，且已在 dev01 上用 `git update-index --force-remove` 解除 `chroma_db/`、`logs/`、`md5.text`、`memorys/chat_history/`、`__pycache__/*.pyc` 共 29 个文件的历史跟踪（本地文件保留） | 仓库膨胀、泄漏用户内容 | 历史提交仍含旧日志与会话内容；若曾公开仓库且介意内容，需另做历史改写或轮换敏感信息 |
-| TD-17 | 🧪 部分修复 | 无自动化测试/CI | 已加 `tests/` 下 30 条 stdlib unittest；仍无 CI | 改动易回归 | 接 GitHub Actions / pre-commit，跑 `unittest` + `eval.run_eval` 门禁 |
+| TD-17 | 🧪 部分修复 | 无 CI | 已加 `tests/` 下 37 条 stdlib unittest；仍无 CI | 改动易回归 | 接 GitHub Actions / pre-commit，跑 `unittest` + `eval.run_eval` 门禁 |
 | TD-18 | P2 | 模型/Embedding 维度无迁移机制 | Chroma 集合与模型绑定 | 换模型后检索报维度错误 | 集合名带模型/版本；启动时校验维度 |
 | TD-19 | P2 | 外部数据缓存不失效 | `external_data` 模块级 dict 只填充一次 | 运行中 CSV 更新不生效 | 加 TTL/文件 mtime 检查 |
 | TD-20 | P3 | 逐字符 `time.sleep(0.01)` | `app.py` 的 `capture` | 长回答渲染慢，占用请求线程 | 改为直接 `write_stream` 或更小延迟 |
@@ -979,6 +992,11 @@ uv run -m rag.vector_store --rebuild
 | TD-37 | P2 | 父块存储为单 JSON | `storage/parents.json` 全量读写 | 文档量大时膨胀、并发写放大 | 生产换 PostgreSQL（项目已有依赖） |
 | TD-38 | P2 | `qwen3-vl-rerank` 分数不可校准 | precision≥0.9 下无可行 Answerability 阈值（可回答 0.682~0.951，不可回答 0.611~0.732） | 不能拿它的分数做拒答 | 只用于排序；Answerability 继续用 LLM judge |
 | TD-39 | P2 | Golden Set 标注覆盖不足 | `ly-028`、`rq-015` 等存在多个有效答案，但只标了部分片段 | 严格 chunk Recall 会低估 rerank | 补充“多有效答案”标注，或引入答案正确性评估 |
+| TD-40 | ✅ 已修复 | `index_version` 未覆盖 `separators` | 已把 `separators` 纳入公式并 bump `CHUNKER_VERSION` 到 `structure-v2`；当前 `idx-cac98b011b`，两个集合已重建 | 改切分符/分块参数会触发 `INDEX_STALE`，不会静默用旧块 | 换参数后仍需 `--rebuild`（版本变了不等于块已重切） |
+| TD-41 | ✅ 已修复 | Answerability 兜底阈值硬编码 | `RetrievalService._answerability_fallback` 改为读 `answerability_fallback_threshold`（0.40） | 熔断期与正常兜底口径一致 | — |
+| TD-42 | ✅ 已修复 | BM25 缓存 key 不含内容指纹 | `_bm25_cache_key` = `index_version:块数:内容指纹`；`_bm25_cache` 限制 4 条 | 内容变但块数不变时不会再复用旧倒排表 | — |
+| TD-43 | ✅ 已修复 | `cache_size: 0` 并未真正禁用缓存 | 已改为 `max_size=0` 时 `get` 恒 miss、`set` 直接返回 | 评测可用 `cache_size: 0` 真正隔离缓存 | — |
+| TD-44 | ✅ 已修复 | `compare_reports` 硬编码 `k=10` | 已改为从报告顶层 `top_k` 读取 | 不同 `--top-k` 的快照也可对比 | — |
 
 ### 12.1 建议修复顺序
 
@@ -1242,7 +1260,7 @@ def require_conf(conf: dict, key: str):
 
 ### 13.10 测试策略
 
-已落地 37 条 stdlib `unittest`（无需网络/模型）：
+已落地 37 条 stdlib `unittest`：不发起网络请求，也不会真正调用模型；但 import 链路会构造模型客户端（`model.factory` 模块级实例），因此需要 `.env` 可读：
 
 ```text
 tests/
@@ -1436,7 +1454,7 @@ uv run -m utils.logger_handler
 | 新增/删除中间件 | 本文 5.2、8、11；PROJECT_OVERVIEW 第 3 节；`architecture.svg` 编排层 |
 | 新增配置项 | 本文 9；README 配置速查；PROJECT_OVERVIEW 第 8 节 |
 | 修改 RAG 流程/参数 | 本文 7、9.2/9.3；PROJECT_OVERVIEW 第 5 节；README 配置速查；`rag-pipeline.svg`；`docs/rag-improvement/` 对应阶段文档 |
-| 修改评测/Golden Set | `docs/rag-improvement/01-阶段0-评估标尺.md`；README 4.7；`eval/results/baseline.json` |
+| 修改评测/Golden Set | `docs/rag-improvement/01-阶段0-评估标尺.md`；README 第 3 节（效果）与 4.6（跑测试与评测）；`eval/results/baseline.json` |
 | 修改模型/Embedding | 本文 3、9.6、13.6；README 技术栈；PROJECT_OVERVIEW 第 2 节；`architecture.svg` 模型/存储层节点与副标题（涉及 RAG 链上的模型时同步 `rag-pipeline.svg` 的 ChatModel 节点） |
 | 修改目录结构 | 本文 5.1；README 目录树；PROJECT_OVERVIEW 第 6 节 |
 | 新增/删除文档或章节 | README 导读/文档地图；PROJECT_OVERVIEW 第 8 节；AGENTS 阅读顺序 |
