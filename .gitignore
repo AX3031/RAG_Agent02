@@ -6,6 +6,7 @@ __pycache__/
 # 本地需求文档（不纳入版本管理）
 对RAG的初步要求.docx
 ~$AG的初步要求.docx
+prompts/Instructional_prompts.txt
 # 由需求文档转换出的评测语料
 data/rag_requirements.txt
 
